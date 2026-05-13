@@ -1,0 +1,106 @@
+/*
+ * ServerTrack v4.1 — SVG Icon System
+ * Replaces all emoji with accessible inline SVG icons.
+ * Loaded alongside admin.css via ServerTrack_Admin::enqueue_assets().
+ */
+
+/* ── Base icon token ──────────────────────────────────────────────────────── */
+.st-icon {
+    display       : inline-block;
+    vertical-align: middle;
+    flex-shrink   : 0;
+    line-height   : 1;
+    position      : relative;
+    top           : -1px; /* optical alignment with adjacent text */
+    transition    : opacity 160ms ease, transform 160ms ease;
+}
+
+/* KPI card icon — larger, brand-tinted ────────────────────────────────────── */
+.st-kpi-svg {
+    width        : 22px;
+    height       : 22px;
+    stroke       : var(--st-primary, #01696f);
+    stroke-width : 1.75;
+    opacity      : 0.85;
+    top          : 0;
+}
+
+.st-kpi:hover .st-kpi-svg {
+    opacity  : 1;
+    transform: scale(1.08);
+}
+
+/* Status icon in log table ────────────────────────────────────────────────── */
+.st-icon-status {
+    width  : 13px;
+    height : 13px;
+    top    : -1px;
+    margin-right: 4px;
+}
+
+/* Panel title icon ────────────────────────────────────────────────────────── */
+.st-panel-title .st-icon {
+    width       : 15px;
+    height      : 15px;
+    margin-right: 6px;
+    stroke      : var(--st-primary, #01696f);
+    opacity     : 0.9;
+}
+
+/* Grade pill icon ─────────────────────────────────────────────────────────── */
+.st-grade-pill .st-icon,
+.st-grade-pill svg {
+    width       : 12px;
+    height      : 12px;
+    margin-right: 5px;
+    top         : -1px;
+}
+
+/* Refresh button icon ─────────────────────────────────────────────────────── */
+.st-refresh-btn .st-icon {
+    width       : 13px;
+    height      : 13px;
+    stroke      : currentColor;
+    margin-right: 5px;
+    transition  : transform 400ms cubic-bezier(.4,0,.2,1);
+}
+
+.st-refresh-btn:hover .st-icon,
+.st-refresh-btn.st-spinning .st-icon {
+    transform: rotate(360deg);
+}
+
+/* Inline arrow icon on Configure link ─────────────────────────────────────── */
+.st-panel-action .st-icon {
+    width       : 11px;
+    height      : 11px;
+    margin-left : 4px;
+    transition  : transform 160ms ease;
+}
+
+.st-panel-action:hover .st-icon {
+    transform: translateX(3px);
+}
+
+/* KPI sub-label text ──────────────────────────────────────────────────────── */
+.st-kpi-sub {
+    font-size  : 10px;
+    opacity    : 0.55;
+    margin-top : 2px;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+/* st-live-label ────────────────────────────────────────────────────────────── */
+.st-live-label {
+    font-size : 12px;
+    color     : var(--st-muted, #6b7280);
+}
+
+/* Refresh badge layout ────────────────────────────────────────────────────── */
+.st-refresh-badge {
+    display    : flex;
+    align-items: center;
+    gap        : 10px;
+    margin     : 12px 0 4px;
+}

@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ServerTrack v6.0.0 — Bug Analysis Report</title>
+<style>
+:root,[data-theme="light"]{
+--color-bg:#f7f6f2;--color-surface:#f9f8f5;--color-surface-2:#fbfbf9;
+--color-surface-offset:#f3f0ec;--color-surface-dynamic:#e6e4df;
+--color-divider:#dcd9d5;--color-border:#d4d1ca;
+--color-text:#28251d;--color-text-muted:#7a7974;--color-text-faint:#bab9b4;
+--color-primary:#01696f;--color-primary-hover:#0c4e54;
+--color-primary-highlight:#cedcd8;
+--color-error:#a12c7b;--color-error-highlight:#e0ced7;
+--color-warning:#964219;--color-warning-highlight:#ddcfc6;
+--color-success:#437a22;--color-success-highlight:#d4dfcc;
+--color-notification:#a13544;--color-notification-highlight:#dececb;
+--color-orange:#da7101;--color-gold:#d19900;
+--shadow-sm:0 1px 2px oklch(0.2 0.01 80/0.06);
+--shadow-md:0 4px 12px oklch(0.2 0.01 80/0.08);
+--shadow-lg:0 12px 32px oklch(0.2 0.01 80/0.12);
+--radius-sm:0.375rem;--radius-md:0.5rem;--radius-lg:0.75rem;
+--radius-xl:1rem;--radius-full:9999px;
+--space-1:0.25rem;--space-2:0.5rem;--space-3:0.75rem;--space-4:1rem;
+--space-5:1.25rem;--space-6:1.5rem;--space-8:2rem;--space-10:2.5rem;
+--space-12:3rem;--space-16:4rem;
+--text-xs:clamp(0.75rem,0.7rem + 0.25vw,0.875rem);
+--text-sm:clamp(0.875rem,0.8rem + 0.35vw,1rem);
+--text-base:clamp(1rem,0.95rem + 0.25vw,1.125rem);
+--text-lg:clamp(1.125rem,1rem + 0.75vw,1.5rem);
+--text-xl:clamp(1.5rem,1.2rem + 1.25vw,2.25rem);
+--font-body:'Inter',system-ui,sans-serif;
+--font-mono:'JetBrains Mono','Fira Code',monospace;
+}
+[data-theme="dark"]{
+--color-bg:#171614;--color-surface:#1c1b19;--color-surface-2:#201f1d;
+--color-surface-offset:#1d1c1a;--color-surface-dynamic:#2d2c2a;
+--color-divider:#262523;--color-border:#393836;
+--color-text:#cdccca;--color-text-muted:#797876;--color-text-faint:#5a5957;
+--color-primary:#4f98a3;--color-primary-hover:#227f8b;
+--color-primary-highlight:#313b3b;
+--color-error:#d163a7;--color-error-highlight:#4c3d46;
+--color-warning:#bb653b;--color-warning-highlight:#564942;
+--color-success:#6daa45;--color-success-highlight:#3a4435;
+--color-notification:#dd6974;--color-notification-highlight:#574848;
+--color-orange:#fdab43;--color-gold:#e8af34;
+--shadow-sm:0 1px 2px oklch(0 0 0/0.2);
+--shadow-md:0 4px 12px oklch(0 0 0/0.3);
+--shadow-lg:0 12px 32px oklch(0 0 0/0.4);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-font-smoothing:antialiased;scroll-behavior:smooth;scroll-padding-top:5rem}
+body{min-height:100dvh;font-family:var(--font-body);font-size:var(--text-base);color:var(--color-text);background:var(--color-bg);line-height:1.6}
+pre,code{font-family:var(--font-mono)}
+/* DEPLOY BANNER */
+.deploy-banner{
+background:oklch(from var(--color-notification) l c h/0.15);
+border-bottom:2px solid var(--color-notification);
+padding:var(--space-3) var(--space-6);
+text-align:center;font-weight:700;
+color:var(--color-notification);font-size:var(--text-sm);
+letter-spacing:0.05em;text-transform:uppercase
+}
+/* NAV */
+.top-nav{
+position:sticky;top:0;z-index:100;
+background:color-mix(in oklab,var(--color-surface) 95%,transparent);
+backdrop-filter:blur(12px);
+border-bottom:1px solid var(--color-divider);
+padding:0 var(--space-6);height:56px;
+display:flex;align-items:center;justify-content:space-between
+}
+.nav-brand{display:flex;align-items:center;gap:var(--space-3)}
+.nav-logo svg{width:28px;height:28px;color:var(--color-primary)}
+.nav-title{font-weight:700;font-size:var(--text-sm);letter-spacing:-0.01em}
+.nav-version{
+font-size:var(--text-xs);color:var(--color-text-muted);
+padding:2px var(--space-2);border-radius:var(--radius-sm);
+background:var(--color-surface-dynamic);border:1px solid var(--color-border)
+}
+.nav-actions{display:flex;align-items:center;gap:var(--space-3)}
+.theme-btn{
+width:36px;height:36px;border-radius:var(--radius-md);
+border:1px solid var(--color-border);background:var(--color-surface);
+color:var(--color-text-muted);cursor:pointer;
+display:flex;align-items:center;justify-content:center;
+transition:all 180ms ease
+}
+.theme-btn:hover{background:var(--color-surface-dynamic);color:var(--color-text)}
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 88px)}
+.sidebar{
+position:sticky;top:56px;height:calc(100vh - 56px);
+overflow-y:auto;border-right:1px solid var(--color-divider);
+padding:var(--space-6) var(--space-4)
+}
+.sidebar-section-label{
+font-size:var(--text-xs);text-transform:uppercase;letter-spacing:0.08em;
+color:var(--color-text-faint);font-weight:600;
+margin-bottom:var(--space-2);padding-left:var(--space-3)
+}
+.sidebar-nav{list-style:none;margin-bottom:var(--space-6)}
+.sidebar-nav li a{
+display:flex;align-items:center;gap:var(--space-2);
+padding:var(--space-2) var(--space-3);
+border-radius:var(--radius-md);text-decoration:none;
+color:var(--color-text-muted);font-size:var(--text-sm);
+transition:all 180ms ease
+}
+.sidebar-nav li a:hover{background:var(--color-surface-dynamic);color:var(--color-text)}
+.sev-dot{
+width:8px;height:8px;border-radius:50%;flex-shrink:0
+}
+.dot-critical{background:#ef4444}
+.dot-high{background:#f59e0b}
+.dot-medium{background:#f97316}
+.dot-low{background:#22c55e}
+.dot-info{background:var(--color-primary)}
+/* MAIN */
+.main-content{padding:var(--space-8) var(--space-10);max-width:900px}
+/* HERO */
+.report-hero{
+margin-bottom:var(--space-8);
+padding-bottom:var(--space-8);
+border-bottom:1px solid var(--color-divider)
+}
+.report-hero h1{
+font-size:var(--text-xl);font-weight:800;
+letter-spacing:-0.03em;line-height:1.1;
+margin-bottom:var(--space-3)
+}
+.hero-meta{display:flex;gap:var(--space-4);flex-wrap:wrap;align-items:center;margin-bottom:var(--space-6)}
+.badge{
+display:inline-flex;align-items:center;gap:var(--space-1);
+padding:3px var(--space-3);border-radius:var(--radius-full);
+font-size:var(--text-xs);font-weight:600;letter-spacing:0.03em
+}
+.badge-critical{background:oklch(from #ef4444 l c h/0.15);color:#ef4444;border:1px solid oklch(from #ef4444 l c h/0.3)}
+.badge-high{background:oklch(from #f59e0b l c h/0.15);color:#f59e0b;border:1px solid oklch(from #f59e0b l c h/0.3)}
+.badge-medium{background:oklch(from #f97316 l c h/0.15);color:#f97316;border:1px solid oklch(from #f97316 l c h/0.3)}
+.badge-low{background:oklch(from #22c55e l c h/0.15);color:#22c55e;border:1px solid oklch(from #22c55e l c h/0.3)}
+.badge-fixed{background:var(--color-success-highlight);color:var(--color-success)}
+.badge-pr{background:var(--color-primary-highlight);color:var(--color-primary)}
+.badge-new{background:var(--color-notification-highlight);color:var(--color-notification)}
+.badge-design{background:var(--color-surface-dynamic);color:var(--color-text-muted)}
+/* GRADE BAR */
+.grade-section{
+background:var(--color-surface);border-radius:var(--radius-lg);
+border:1px solid var(--color-border);padding:var(--space-6);
+margin-bottom:var(--space-8)
+}
+.grade-section h3{font-size:var(--text-sm);font-weight:600;margin-bottom:var(--space-4);color:var(--color-text-muted)}
+.grade-track{
+display:flex;align-items:center;gap:var(--space-4);
+flex-wrap:wrap
+}
+.grade-step{
+display:flex;flex-direction:column;align-items:center;gap:var(--space-1);
+flex:1;min-width:80px
+}
+.grade-letter{
+font-size:var(--text-xl);font-weight:800;line-height:1;
+padding:var(--space-2) var(--space-4);border-radius:var(--radius-md);
+border:2px solid var(--color-border);background:var(--color-surface-offset)
+}
+.grade-d .grade-letter{color:#ef4444;border-color:oklch(from #ef4444 l c h/0.4)}
+.grade-b .grade-letter{color:#f59e0b;border-color:oklch(from #f59e0b l c h/0.4)}
+.grade-a- .grade-letter{color:#22c55e;border-color:oklch(from #22c55e l c h/0.4)}
+.grade-a .grade-letter{color:var(--color-primary);border-color:oklch(from var(--color-primary) l c h/0.4)}
+.grade-label{font-size:var(--text-xs);color:var(--color-text-muted);text-align:center;max-width:90px}
+.grade-arrow{color:var(--color-text-faint);font-size:1.25rem;flex-shrink:0}
+/* SUMMARY TABLE */
+.summary-table-wrap{
+background:var(--color-surface);border-radius:var(--radius-lg);
+border:1px solid var(--color-border);overflow:hidden;
+margin-bottom:var(--space-8)
+}
+table{width:100%;border-collapse:collapse}
+th{
+text-align:left;padding:var(--space-3) var(--space-4);
+font-size:var(--text-xs);text-transform:uppercase;letter-spacing:0.06em;
+font-weight:600;color:var(--color-text-muted);
+background:var(--color-surface-offset);
+border-bottom:1px solid var(--color-divider)
+}
+td{
+padding:var(--space-3) var(--space-4);
+font-size:var(--text-sm);
+border-bottom:1px solid var(--color-divider)
+}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--color-surface-dynamic)}
+.status-icon{font-size:1rem}
+/* SECTION HEADING */
+.section-heading{
+display:flex;align-items:center;gap:var(--space-3);
+margin:var(--space-10) 0 var(--space-5);
+padding-bottom:var(--space-3);
+border-bottom:1px solid var(--color-divider)
+}
+.section-heading h2{font-size:var(--text-lg);font-weight:700;letter-spacing:-0.02em}
+.section-sev-bar{
+width:4px;height:24px;border-radius:2px;flex-shrink:0
+}
+.bar-critical{background:#ef4444}
+.bar-high{background:#f59e0b}
+.bar-medium{background:#f97316}
+.bar-low{background:#22c55e}
+/* BUG CARD */
+.bug-card{
+background:var(--color-surface);border-radius:var(--radius-lg);
+border:1px solid var(--color-border);
+margin-bottom:var(--space-5);
+overflow:hidden;transition:box-shadow 180ms ease
+}
+.bug-card:hover{box-shadow:var(--shadow-md)}
+.bug-card-header{
+padding:var(--space-4) var(--space-5);
+display:flex;align-items:flex-start;gap:var(--space-4);
+cursor:pointer;user-select:none;
+border-bottom:1px solid transparent;
+transition:background 180ms ease
+}
+.bug-card-header:hover{background:var(--color-surface-dynamic)}
+.bug-card.open .bug-card-header{border-bottom-color:var(--color-divider)}
+.bug-card-meta{flex:1}
+.bug-id{font-size:var(--text-xs);font-weight:700;color:var(--color-text-faint);letter-spacing:0.05em;font-family:var(--font-mono)}
+.bug-title{font-weight:700;font-size:var(--text-sm);margin:var(--space-1) 0;line-height:1.3}
+.bug-file{font-size:var(--text-xs);color:var(--color-text-muted);font-family:var(--font-mono)}
+.bug-badges{display:flex;flex-wrap:wrap;gap:var(--space-2);margin-top:var(--space-2)}
+.bug-chevron{
+width:20px;height:20px;color:var(--color-text-faint);flex-shrink:0;
+transition:transform 200ms ease;margin-top:2px
+}
+.bug-card.open .bug-chevron{transform:rotate(180deg)}
+.bug-card-body{
+display:none;padding:var(--space-5);background:var(--color-surface-2)
+}
+.bug-card.open .bug-card-body{display:block}
+.bug-section-label{
+font-size:var(--text-xs);text-transform:uppercase;letter-spacing:0.07em;
+font-weight:700;color:var(--color-text-faint);margin-bottom:var(--space-2);margin-top:var(--space-4)
+}
+.bug-section-label:first-child{margin-top:0}
+.bug-description{font-size:var(--text-sm);color:var(--color-text-muted);line-height:1.7;margin-bottom:var(--space-4)}
+.code-block{
+background:var(--color-surface-offset);border:1px solid var(--color-border);
+border-radius:var(--radius-md);overflow-x:auto;
+margin-bottom:var(--space-4)
+}
+.code-block-header{
+display:flex;align-items:center;justify-content:space-between;
+padding:var(--space-2) var(--space-4);
+border-bottom:1px solid var(--color-divider);
+font-size:var(--text-xs);color:var(--color-text-faint);
+font-family:var(--font-mono)
+}
+.code-label-bad{color:#ef4444}
+.code-label-good{color:#22c55e}
+.code-block pre{
+padding:var(--space-4);
+font-size:var(--text-xs);line-height:1.65;
+color:var(--color-text);white-space:pre
+}
+.impact-box{
+background:oklch(from var(--color-warning) l c h/0.08);
+border:1px solid oklch(from var(--color-warning) l c h/0.25);
+border-radius:var(--radius-md);padding:var(--space-3) var(--space-4);
+font-size:var(--text-sm);color:var(--color-warning);margin-bottom:var(--space-4)
+}
+/* ACTION ITEMS */
+.action-grid{
+display:grid;grid-template-columns:1fr 1fr;gap:var(--space-4);
+margin-bottom:var(--space-8)
+}
+.action-card{
+background:var(--color-surface);border-radius:var(--radius-lg);
+border:1px solid var(--color-border);padding:var(--space-5)
+}
+.action-card h3{
+font-size:var(--text-sm);font-weight:700;margin-bottom:var(--space-4)
+}
+.action-list{list-style:none}
+.action-list li{
+display:flex;align-items:flex-start;gap:var(--space-3);
+padding:var(--space-2) 0;font-size:var(--text-sm);
+border-bottom:1px solid var(--color-divider)
+}
+.action-list li:last-child{border-bottom:none}
+.action-icon{flex-shrink:0;margin-top:2px}
+@media (max-width:768px){
+.layout{grid-template-columns:1fr}
+.sidebar{display:none}
+.main-content{padding:var(--space-6) var(--space-4)}
+.action-grid{grid-template-columns:1fr}
+.grade-track{gap:var(--space-2)}
+}
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+
+<div class="deploy-banner">⛔ DO NOT DEPLOY — Merge PR #7 · #11 · #17 and fix BUG-M3 · BUG-M4 first</div>
+
+<nav class="top-nav">
+  <div class="nav-brand">
+    <svg class="nav-logo" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="1.8" aria-label="ServerTrack">
+      <rect x="3" y="5" width="22" height="18" rx="3"/>
+      <path d="M3 11h22"/>
+      <circle cx="8" cy="8" r="1" fill="currentColor" stroke="none"/>
+      <circle cx="12" cy="8" r="1" fill="currentColor" stroke="none"/>
+      <path d="M8 16l3 3 6-6" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <span class="nav-title">ServerTrack Bug Report</span>
+    <span class="nav-version">v6.0.0</span>
+  </div>
+  <div class="nav-actions">
+    <button class="theme-btn" data-theme-toggle aria-label="Toggle theme">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+  </div>
+</nav>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="sidebar-section-label">Overview</div>
+    <ul class="sidebar-nav">
+      <li><a href="#summary"><span class="sev-dot dot-info"></span>Summary</a></li>
+      <li><a href="#grade"><span class="sev-dot dot-info"></span>Production Grade</a></li>
+      <li><a href="#actions"><span class="sev-dot dot-info"></span>Action Items</a></li>
+    </ul>
+    <div class="sidebar-section-label">Critical Bugs</div>
+    <ul class="sidebar-nav">
+      <li><a href="#m1"><span class="sev-dot dot-critical"></span>M1 · Dedup Coercion</a></li>
+      <li><a href="#m2"><span class="sev-dot dot-critical"></span>M2 · No TikTok Cancel</a></li>
+    </ul>
+    <div class="sidebar-section-label">High Priority</div>
+    <ul class="sidebar-nav">
+      <li><a href="#m3"><span class="sev-dot dot-high"></span>M3 · No Google Cart</a></li>
+      <li><a href="#h1"><span class="sev-dot dot-high"></span>H1 · XFF Spoofable</a></li>
+      <li><a href="#h2"><span class="sev-dot dot-high"></span>H2 · CDN Collapse</a></li>
+    </ul>
+    <div class="sidebar-section-label">Medium Priority</div>
+    <ul class="sidebar-nav">
+      <li><a href="#m4"><span class="sev-dot dot-medium"></span>M4 · PII in Logs</a></li>
+      <li><a href="#m5"><span class="sev-dot dot-medium"></span>M5 · Silent Consent</a></li>
+      <li><a href="#m6"><span class="sev-dot dot-medium"></span>M6 · Paused Dedup</a></li>
+      <li><a href="#m7"><span class="sev-dot dot-medium"></span>M7 · Email Validation</a></li>
+    </ul>
+    <div class="sidebar-section-label">Low Priority</div>
+    <ul class="sidebar-nav">
+      <li><a href="#l1"><span class="sev-dot dot-low"></span>L1 · Meta-Only Offline</a></li>
+      <li><a href="#l2"><span class="sev-dot dot-low"></span>L2 · Logger Unbounded</a></li>
+    </ul>
+  </aside>
+
+  <main class="main-content">
+
+    <div class="report-hero">
+      <h1>🔍 Comprehensive Bug Analysis</h1>
+      <div class="hero-meta">
+        <span class="badge badge-critical">2 Critical</span>
+        <span class="badge badge-high">3 High</span>
+        <span class="badge badge-medium">4 Medium</span>
+        <span class="badge badge-low">2 Low</span>
+        <span style="font-size:var(--text-xs);color:var(--color-text-faint)">Generated 2026-05-12 · ServerTrack v6.0.0</span>
+      </div>
+      <p style="font-size:var(--text-sm);color:var(--color-text-muted);max-width:65ch">
+        Deep analysis of the current codebase including 4 active fix PRs. The codebase shows significant improvements with recent fixes, but these 11 remaining issues require attention before production deployment.
+      </p>
+    </div>
+
+    <!-- GRADE -->
+    <div id="grade" class="grade-section">
+      <h3>Production Grade Progression</h3>
+      <div class="grade-track">
+        <div class="grade-step grade-d">
+          <div class="grade-letter">D</div>
+          <div class="grade-label">Current (main branch)</div>
+        </div>
+        <div class="grade-arrow">→</div>
+        <div class="grade-step grade-b">
+          <div class="grade-letter">B+</div>
+          <div class="grade-label">After PR #7, #11, #17 merged</div>
+        </div>
+        <div class="grade-arrow">→</div>
+        <div class="grade-step grade-a-">
+          <div class="grade-letter">A−</div>
+          <div class="grade-label">After M3 + M4 PRs merged</div>
+        </div>
+        <div class="grade-arrow">→</div>
+        <div class="grade-step grade-a">
+          <div class="grade-letter">A</div>
+          <div class="grade-label">After v6.0.1 patches</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUMMARY TABLE -->
+    <div id="summary" class="summary-table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Bug</th>
+            <th>Severity</th>
+            <th>File</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-family:var(--font-mono);font-size:var(--text-xs)"><a href="#m1" style="color:var(--color-primary);text-decoration:none">BUG-M1</a><br><span style="color:var(--color-text-muted)">Subscriptions dedup coercion</span></td>
+            <td><span class="badge badge-critical">🔴 Critical</span></td>
+            <td style="font-size:var(--text-xs);color:var(--color-text-muted);font-family:var(--font-mono)">Subscriptions.php</td>
+            <td><span class="badge badge-pr">✅ PR #11</span></td>
+          </tr>
+          <tr>
+            <td style="font-family:var(--font-mono);font-size:var(--text-xs)"><a href="#m2" style="color:var(--color-primary);text-decoration:none">BUG-M2</a><br><span style="color:var(--color-text-muted)">Cancelled missing TikTok</span></td>
+            <td><span class="badge badge-high">🟡 High</span></td>
+            <td style="font-size:var(--text-xs);color:var(--color-text-muted);font-family:var(--font-mono)">Subscriptions.php</td>
+            <td><span class="badge badge-pr">✅ PR #11</span></td>
+          </tr>
+          <tr>
+            <td style="font-family:var(--font-mono);font-size:var(--text-xs)"><a href="#m3" style="color:var(--color-notification);text-decoration:none">BUG-M3</a><br><span style="color:var(--color-text-muted)">Cart abandonment no Google</span></td>
+            <td><span class="badge badge-high">🟡 High</span></td>
+            <td style="font-size:var(--text-xs);color:var(--color-text-muted);font-family:var(--font-mono)">CartAbandonment.php</td>
+            <td><span class="badge badge-new">❌ NEW — Needs PR</span></td>
+          </tr>
+          <tr>
+            <td style="font-family:var(--font-mono);font-size:var(--text-xs)"><a href="#h1" style="color:var(--color-primary);text-decoration:none">BUG-H1</a><br><span style="color:var(--color-text-muted)">XFF first-token spoofable</span></td>
+            <td><span class="badge badge-high">🟡 High</span></td>
+            <td style="font-size:var(--text-xs);color:var(--color-text-muted);font-family:var(--font-mono)">Frontend.php</td>
+            <td><span class="badge badge-pr">⏳ PR #17</span></td>
+          </tr>
+          <tr>
+            <td style="font-family:var(--font-mono);font-size:var(--text-xs)"><a href="#h2" style="color:var(--color-primary);text-decoration:none">BUG-H2</a><br><span style="color:var(--color-text-muted)">CDN IP collapse</span></td>
+            <td><span class="badge badge-high">🟡 High</span></td>
+            <td style="font-size:var(--text-xs);color:var(--color-text-muted);font-family:var(--font-mono)">Frontend.php</td>
+            <td><span class="badge badge-pr">⏳ PR #17</span></td>
+          </tr>
+          <tr>
+            <td style="font-family:var(--font-mono);font-size:var(--text-xs)"><a href="#m4" style="color:var(--color-notification);text-decoration:none">BUG-M4</a><br><span style="color:var(--color-text-muted)">REST params logs PII</span></td>
+            <td><span class="badge badge-medium">🟠 Medium</span></td>
+            <td style="font-size:var(--text-xs);color:var(--color-text-muted);font-family:var(--font-mono)">Frontend.php</td>
+            <td><span class="badge badge-new">❌ NEW — Needs PR</span></td>
+          </tr>
+          <tr>
+            <td style="font-family:var(--font-mono);font-size:var(--text-xs)"><a href="#m5" style="color:var(--color-primary);text-decoration:none">BUG-M5</a><br><span style="color:var(--color-text-muted)">Silent consent in cron</span></td>
+            <td><span class="badge badge-medium">🟠 Medium</span></td>
+            <td style="font-size:var(--text-xs);color:var(--color-text-muted);font-family:var(--font-mono)">Consent.php</td>
+            <td><span class="badge badge-medium" style="background:oklch(from var(--color-gold) l c h/0.15);color:var(--color-gold)">⚠️ Partial</span></td>
+          </tr>
+          <tr>
+            <td style="font-family:var(--font-mono);font-size:var(--text-xs)"><a href="#m6" style="color:var(--color-primary);text-decoration:none">BUG-M6</a><br><span style="color:var(--color-text-muted)">Paused dedup string key</span></td>
+            <td><span class="badge badge-medium">🟠 Medium</span></td>
+            <td style="font-size:var(--text-xs);color:var(--color-text-muted);font-family:var(--font-mono)">Subscriptions.php</td>
+            <td><span class="badge badge-pr">✅ PR #11</span></td>
+          </tr>
+          <tr>
+            <td style="font-family:var(--font-mono);font-size:var(--text-xs)"><a href="#m7" style="color:var(--color-notification);text-decoration:none">BUG-M7</a><br><span style="color:var(--color-text-muted)">Cart email not validated</span></td>
+            <td><span class="badge badge-medium">🟠 Medium</span></td>
+            <td style="font-size:var(--text-xs);color:var(--color-text-muted);font-family:var(--font-mono)">CartAbandonment.php</td>
+            <td><span class="badge badge-new">❌ NEW — Needs PR</span></td>
+          </tr>
+          <tr>
+            <td style="font-family:var(--font-mono);font-size:var(--text-xs)"><a href="#l1" style="color:var(--color-primary);text-decoration:none">BUG-L1</a><br><span style="color:var(--color-text-muted)">Offline conversions Meta-only</span></td>
+            <td><span class="badge badge-low">🟢 Low</span></td>
+            <td style="font-size:var(--text-xs);color:var(--color-text-muted);font-family:var(--font-mono)">OfflineConversion.php</td>
+            <td><span class="badge badge-design">✅ By Design</span></td>
+          </tr>
+          <tr>
+            <td style="font-family:var(--font-mono);font-size:var(--text-xs)"><a href="#l2" style="color:var(--color-primary);text-decoration:none">BUG-L2</a><br><span style="color:var(--color-text-muted)">Logger context unbounded</span></td>
+            <td><span class="badge badge-low">🟢 Low</span></td>
+            <td style="font-size:var(--text-xs);color:var(--color-text-muted);font-family:var(--font-mono)">Logger.php</td>
+            <td><span class="badge badge-design">⚠️ Acceptable</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ACTION ITEMS -->
+    <div id="actions">
+      <div class="section-heading">
+        <div class="section-sev-bar bar-critical"></div>
+        <h2>🎯 Action Items</h2>
+      </div>
+      <div class="action-grid">
+        <div class="action-card">
+          <h3>🔴 Immediate — Before Production</h3>
+          <ul class="action-list">
+            <li><span class="action-icon">✅</span><span>Merge PR #7 — Critical logger + Google trigger fixes</span></li>
+            <li><span class="action-icon">✅</span><span>Merge PR #11 — Subscriptions + InitiateCheckout fixes</span></li>
+            <li><span class="action-icon">✅</span><span>Merge PR #17 — Rate limit security fixes</span></li>
+            <li><span class="action-icon">🔴</span><span>Create PR to fix <strong>BUG-M3</strong> — Cart abandonment missing Google block</span></li>
+            <li><span class="action-icon">🔴</span><span>Create PR to fix <strong>BUG-M4</strong> — REST params PII in debug log</span></li>
+          </ul>
+        </div>
+        <div class="action-card">
+          <h3>🟡 Soon — v6.0.1 Patch</h3>
+          <ul class="action-list">
+            <li><span class="action-icon">🟡</span><span>Fix <strong>BUG-M5</strong> — Consent cron bypass logging in production</span></li>
+            <li><span class="action-icon">🟡</span><span>Fix <strong>BUG-M7</strong> — Cart abandonment <code>is_email()</code> validation</span></li>
+            <li><span class="action-icon">⚪</span><sp

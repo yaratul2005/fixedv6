@@ -1,0 +1,15 @@
+# ServerTrack — Native Server-Side Events
+# Copyright (C) 2024 ServerTrack
+# This file is distributed under the same license as the ServerTrack package.
+msgid ""
+msgstr ""
+"Project-Id-Version: ServerTrack 1.0.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-01-01 00:00:00+00:00\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"X-Generator: ServerTrack 1.0.0\n"
