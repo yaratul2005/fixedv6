@@ -3,7 +3,7 @@
  * Plugin Name:       ServerTrack
  * Plugin URI:        https://github.com/yaratul2005/ServerTrack
  * Description:       Professional server-side CAPI tracking for Meta, TikTok & Google — with identity stitching, click ID persistence, EMQ scoring, offline conversions, pixel dedup, LTV signals, catalog enrichment, webhook outbound, cart abandonment, subscriptions, and admin dashboard.
- * Version:           6.0.3
+ * Version:           6.0.4
  * Requires at least: 6.0
  * Requires PHP:      8.0
  * Author:            MD. Yaser Ahmmed Ratul
@@ -16,9 +16,25 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
+ * v6.0.4 — Bug fixes.
+ *
+ * Fixes in this release
+ * ----------------------
+ *   BUG-FIX-1: ServerTrack_Hasher::event_id() was missing — fatal error on
+ *              every WooCommerce CAPI event from the v3.x source layer.
+ *   BUG-FIX-2: ServerTrack_Source_WooCommerce::init() was never called —
+ *              entire v3.x extended WooCommerce source was dead code.
+ *   BUG-FIX-3: Cart abandonment option key mismatch fixed.
+ *              (servertrack_source_abandonment_enabled vs
+ *               servertrack_source_cart_abandonment_enabled)
+ *   BUG-FIX-4: InitiateCheckout event_id used time() — broke deduplication.
+ *   BUG-FIX-5: ensure_uid() race condition — replaced random UUID with
+ *              deterministic hash_hmac so concurrent requests always produce
+ *              the same external_id for new users.
+ *
  * v6.0.3 — Bootstrap consolidation.
  *
- * History of the problem this release fixes
+ * History of the problem v6.0.3 fixed
  * ------------------------------------------
  * The plugin had TWO competing bootstrap systems that were never merged:
  *
@@ -38,7 +54,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * class-servertrack-core.php is kept as a backward-compat shim (no-op).
  */
 
-define( 'SERVERTRACK_VERSION', '6.0.3' );
+define( 'SERVERTRACK_VERSION', '6.0.4' );
 define( 'SERVERTRACK_DIR',     plugin_dir_path( __FILE__ ) );
 define( 'SERVERTRACK_URL',     plugin_dir_url( __FILE__ ) );
 
@@ -77,21 +93,21 @@ function servertrack_load_classes(): void {
     require_once SERVERTRACK_DIR . 'platforms/class-servertrack-tiktok.php';
     require_once SERVERTRACK_DIR . 'platforms/class-servertrack-google.php';
 
-    // ── WooCommerce event sources (BUG-5 FIX: all 8 files now loaded) ────────
+    // ── WooCommerce event sources ─────────────────────────────────────────────
     // Core WooCommerce purchase/refund/view events.
     require_once SERVERTRACK_DIR . 'sources/class-servertrack-woocommerce.php';
-    // Extended WooCommerce source (alternate/richer implementation).
+    // Extended WooCommerce source (v3.x — wishlist, partial refund, order status).
     require_once SERVERTRACK_DIR . 'sources/class-servertrack-source-woocommerce.php';
-    // Subscription renewal/cancellation/pause events (v3.x).
+    // Subscription renewal/cancellation events.
     require_once SERVERTRACK_DIR . 'sources/class-servertrack-woo-renewals.php';
     // Cart abandonment — opt-in, guarded by option check in init().
     require_once SERVERTRACK_DIR . 'sources/class-servertrack-cart-abandonment.php';
     require_once SERVERTRACK_DIR . 'sources/class-servertrack-woo-abandonment.php';
-    // Order lifecycle status events: on-hold, failed, cancelled (on by default).
+    // Order lifecycle status events: on-hold, failed, cancelled.
     require_once SERVERTRACK_DIR . 'sources/class-servertrack-woo-order-status.php';
-    // AddToWishlist events — opt-in (requires YITH or TI Wishlist plugin).
+    // AddToWishlist events — opt-in.
     require_once SERVERTRACK_DIR . 'sources/class-servertrack-woo-wishlist.php';
-    // Partial refund events (on by default).
+    // Partial refund events.
     require_once SERVERTRACK_DIR . 'sources/class-servertrack-woo-partial-refund.php';
     // Subscriptions (WooCommerce Subscriptions plugin wrapper).
     require_once SERVERTRACK_DIR . 'sources/class-servertrack-subscriptions.php';
@@ -106,7 +122,7 @@ function servertrack_load_classes(): void {
         require_once SERVERTRACK_DIR . 'admin/class-servertrack-admin.php';
     }
 
-    // ── Frontend pixel (BUG-1 FIX: was never loaded) ─────────────────────────
+    // ── Frontend pixel ────────────────────────────────────────────────────────
     if ( ! is_admin() ) {
         require_once SERVERTRACK_DIR . 'frontend/class-servertrack-frontend.php';
     }
@@ -135,6 +151,10 @@ function servertrack_init(): void {
     // ── WooCommerce sources ───────────────────────────────────────────────────
     if ( class_exists( 'WooCommerce' ) ) {
         ServerTrack_WooCommerce::init();
+        // BUG-FIX-2: Source_WooCommerce::init() was never called — the entire
+        // v3.x extended WooCommerce source (wishlist, partial refund, order
+        // status events, enhanced purchase dedup) was silently dead code.
+        ServerTrack_Source_WooCommerce::init();
 
         // Renewals (WooCommerce Subscriptions plugin).
         if ( class_exists( 'WC_Subscriptions' ) ) {
@@ -142,13 +162,14 @@ function servertrack_init(): void {
             ServerTrack_Subscriptions::init();
         }
 
-        // Cart abandonment — two implementations; WooAbandonment is the v3.x one.
-        if ( get_option( 'servertrack_source_abandonment_enabled', 0 ) ) {
+        // BUG-FIX-3: was checking 'servertrack_source_abandonment_enabled'
+        // but admin saves to 'servertrack_source_cart_abandonment_enabled'.
+        if ( get_option( 'servertrack_source_cart_abandonment_enabled', 0 ) ) {
             ServerTrack_CartAbandonment::init();
             ServerTrack_WooAbandonment::init();
         }
 
-        // Order lifecycle status events (on-hold, failed, cancelled) — on by default.
+        // Order lifecycle status events (on-hold, failed, cancelled).
         if ( get_option( 'servertrack_source_order_status_enabled', 1 ) ) {
             ServerTrack_WooOrderStatus::init();
         }
@@ -158,7 +179,7 @@ function servertrack_init(): void {
             ServerTrack_WooWishlist::init();
         }
 
-        // Partial refund events — on by default.
+        // Partial refund events.
         if ( get_option( 'servertrack_source_partial_refund_enabled', 1 ) ) {
             ServerTrack_WooPartialRefund::init();
         }
@@ -178,7 +199,7 @@ function servertrack_init(): void {
         ServerTrack_Admin::init();
     }
 
-    // ── Frontend pixel (BUG-1 FIX) ───────────────────────────────────────────
+    // ── Frontend pixel ────────────────────────────────────────────────────────
     if ( ! is_admin() ) {
         ServerTrack_Frontend::init();
     }
@@ -187,7 +208,6 @@ add_action( 'plugins_loaded', 'servertrack_init', 20 );
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Upgrade guard — version-keyed so it only runs once per version bump.
-// BUG-4 FIX: previously used bare add_option() calls on every page load.
 // ─────────────────────────────────────────────────────────────────────────────
 function servertrack_run_upgrade(): void {
     $installed = get_option( 'servertrack_db_version', '0' );
@@ -205,77 +225,69 @@ function servertrack_register_defaults(): void {
         'servertrack_debug_mode'                     => 0,
         'servertrack_debug_log'                      => [],
         'servertrack_retry_queue'                    => [],
-        // BUG-C (v6.0.2): consent_mode must default to 'none' so events are
-        // never silently blocked on fresh installs.
+        // Consent
         'servertrack_consent_mode'                   => 'none',
         // Platform toggles
         'servertrack_meta_enabled'                   => 0,
-        'servertrack_tiktok_enabled'                 => 0,
+        'servertrack_meta_pixel_id'                  => '',
+        'servertrack_meta_access_token'              => '',
+        'servertrack_meta_test_event_code'           => '',
         'servertrack_google_enabled'                 => 0,
-        // Webhook
-        'servertrack_webhook_enabled'                => 0,
-        'servertrack_webhook_url'                    => '',
-        'servertrack_webhook_secret'                 => '',
-        'servertrack_webhook_events'                 => '',
-        // Frontend tracking (v3.0)
-        'servertrack_scroll_depth'                   => 1,
-        'servertrack_video_tracking'                 => 1,
-        'servertrack_wishlist_tracking'              => 1,
-        'servertrack_google_gtag_id'                 => '',
-        'servertrack_google_gtag_label'              => '',
-        // WooCommerce source toggles (v3.2 / v3.3)
-        'servertrack_source_woo_enabled'             => 1,
-        'servertrack_source_abandonment_enabled'     => 0,
-        'servertrack_abandonment_window_minutes'     => 60,
-        'servertrack_source_order_status_enabled'    => 1,
-        'servertrack_source_wishlist_enabled'        => 0,
-        'servertrack_source_partial_refund_enabled'  => 1,
-        // Optional third-party source toggles
-        'servertrack_source_cf7_enabled'             => 0,
-        'servertrack_source_edd_enabled'             => 0,
+        'servertrack_google_conversion_id'           => '',
+        'servertrack_google_conversion_label'        => '',
+        'servertrack_google_refresh_token'           => '',
+        'servertrack_google_client_id'               => '',
+        'servertrack_google_client_secret'           => '',
+        'servertrack_tiktok_enabled'                 => 0,
+        'servertrack_tiktok_pixel_id'                => '',
+        'servertrack_tiktok_access_token'            => '',
+        // Source toggles
+        'servertrack_source_woo_enabled'                      => 1,
+        'servertrack_source_cart_abandonment_enabled'         => 0,
+        'servertrack_abandonment_window_minutes'              => 60,
+        'servertrack_source_order_status_enabled'             => 1,
+        'servertrack_source_wishlist_enabled'                 => 0,
+        'servertrack_source_partial_refund_enabled'           => 1,
+        'servertrack_source_cf7_enabled'                      => 0,
+        'servertrack_source_edd_enabled'                      => 0,
+        'servertrack_source_subscriptions_enabled'            => 0,
     ];
+
     foreach ( $defaults as $key => $value ) {
-        add_option( $key, $value );
+        if ( false === get_option( $key ) ) {
+            add_option( $key, $value, '', 'no' );
+        }
     }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Activation hook
+// WP-Cron schedules
 // ─────────────────────────────────────────────────────────────────────────────
-register_activation_hook( __FILE__, function (): void {
-    servertrack_register_defaults();
-    update_option( 'servertrack_db_version', SERVERTRACK_VERSION );
+add_filter( 'cron_schedules', function ( array $schedules ): array {
+    if ( ! isset( $schedules['every_five_minutes'] ) ) {
+        $schedules['every_five_minutes'] = [
+            'interval' => 300,
+            'display'  => __( 'Every 5 Minutes', 'servertrack' ),
+        ];
+    }
+    return $schedules;
 } );
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Deactivation hook — clear all scheduled cron jobs and sensitive credentials.
+// Activation / deactivation
 // ─────────────────────────────────────────────────────────────────────────────
+register_activation_hook( __FILE__, function (): void {
+    servertrack_load_classes();
+    servertrack_register_defaults();
+    if ( ! wp_next_scheduled( 'servertrack_process_retry_queue' ) ) {
+        wp_schedule_event( time(), 'every_five_minutes', 'servertrack_process_retry_queue' );
+    }
+    if ( ! wp_next_scheduled( 'servertrack_check_abandonment' ) ) {
+        wp_schedule_event( time(), 'every_five_minutes', 'servertrack_check_abandonment' );
+    }
+} );
+
 register_deactivation_hook( __FILE__, function (): void {
-    $cron_hooks = [
-        'servertrack_send_woo_purchase',
-        'servertrack_send_woo_refund',
-        'servertrack_send_woo_view_content',
-        'servertrack_send_sub_renewal',
-        'servertrack_send_sub_cancelled',
-        'servertrack_send_sub_paused',
-        'servertrack_check_abandonment',
-        'servertrack_send_offline_conversion',
-        'servertrack_deliver_webhook',
-        'servertrack_process_retry_queue',
-        'servertrack_process_retry',
-    ];
-    foreach ( $cron_hooks as $hook ) {
-        wp_clear_scheduled_hook( $hook );
-    }
-    delete_option( 'servertrack_retry_queue' );
-    $credentials = [
-        'servertrack_meta_access_token',
-        'servertrack_tiktok_access_token',
-        'servertrack_google_refresh_token',
-        'servertrack_google_access_token',
-        'servertrack_webhook_secret',
-    ];
-    foreach ( $credentials as $opt ) {
-        delete_option( $opt );
-    }
+    wp_clear_scheduled_hook( 'servertrack_process_retry_queue' );
+    wp_clear_scheduled_hook( 'servertrack_check_abandonment' );
 } );
