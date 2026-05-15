@@ -4,7 +4,17 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * ServerTrack_Dashboard  v4.2
+ * ServerTrack_Dashboard  v4.3
+ *
+ * v4.3 — Fixed all 5 chart display and real-time refresh bugs:
+ *         Bug 1 & 5: Charts never refreshed on auto-refresh. Wired
+ *         servertrack_stats_breakdown AJAX into doRefresh(). Stored
+ *         platChart and eventsChart instances for live .update() calls.
+ *         Bug 2: Platform doughnut collapsed to 0px — added
+ *         maintainAspectRatio:false, wrapped canvas in height:180px div.
+ *         Bug 3: Top Event Types bar chart same collapse — same fix.
+ *         Bug 4: Legend numbers were static PHP HTML, never updated.
+ *         Added IDs to each legend span, update in AJAX refresh callback.
  *
  * v4.2 — Removed last remaining emoji ('Done ✓' in drain-retries JS callback).
  *         Added 'color' key to every KPI definition and applied
@@ -13,10 +23,6 @@ if ( ! defined( 'ABSPATH' ) ) {
  *         browser's Unicode glyph because the colour class was absent).
  *
  * v4.1 — Replaced every emoji with a clean inline SVG icon.
- *         All emoji strings (📡 ✅ 🎯 🔄 📊 ❌ 🛰 ✅ 🔵 🟡 🔴 📋 🔄 ⏭ 🚫 🕐)
- *         are now rendered as accessible <svg> elements using Lucide-style
- *         24×24 stroke icons. A shared st_svg() helper keeps the markup DRY.
- *
  * v3.2 — Chart.js no longer loaded on the Settings page.
  * v3.1 — Removed duplicate CSS enqueue (browser-cache poisoning fix).
  * v3.0 — Removed premature wp_localize_script call.
@@ -29,37 +35,30 @@ class ServerTrack_Dashboard {
 
     // ────────────────────────────────────────────────────────────────────────
     // SVG ICON HELPER
-    // Returns a sanitised inline <svg> for a named icon.
-    // All icons are 16×16 viewport, stroke-based, currentColor.
     // ────────────────────────────────────────────────────────────────────────
 
     private static function svg( string $name, string $extra_class = '' ): string {
         $cls = 'st-icon' . ( $extra_class ? ' ' . $extra_class : '' );
 
         $paths = [
-            // KPI row
             'signal'      => '<path d="M1 6s1-1 4-1 5 2 8 2 4-1 4-1"/><path d="M1 10s1-1 4-1 5 2 8 2 4-1 4-1"/><path d="M1 14s1-1 4-1 5 2 8 2 4-1 4-1"/>',
             'check-circle'=> '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
             'target'      => '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
             'refresh-cw'  => '<polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>',
             'bar-chart-2' => '<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>',
             'x-circle'    => '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>',
-            // Panel headings
             'satellite'   => '<circle cx="12" cy="12" r="3"/><path d="M6.41 6.41a7 7 0 0 0 0 9.9 7 7 0 0 0 9.9 0"/><path d="M3.31 3.31a12 12 0 0 0 0 16.97 12 12 0 0 0 16.97 0"/>',
             'activity'    => '<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
             'clipboard'   => '<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>',
-            // EMQ grade dots
             'check-sq'    => '<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
             'circle-dot'  => '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/>',
-            // Status icons in log
             'check'       => '<polyline points="20 6 9 17 4 12"/>',
             'x'           => '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
             'skip-forward'=> '<polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/>',
             'slash'       => '<circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>',
             'clock'       => '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
             'rotate-ccw'  => '<polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.82"/>',
-            // Misc
-            'alert-tri'   => '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+            'alert-tri'   => '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
             'settings'    => '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
         ];
 
@@ -148,13 +147,6 @@ class ServerTrack_Dashboard {
         <?php ServerTrack_Admin::render_page_header(); ?>
 
         <?php
-        /*
-         * KPI definitions.
-         * 'color' drives the st-kpi-icon-{color} CSS class on the icon wrapper,
-         * which sets the background tint for the SVG badge.
-         * Without this class the SVG had no container style and the browser
-         * showed the bare Unicode fallback glyph (v4.1 regression, fixed v4.2).
-         */
         $kpis = [
             [ 'id' => 'st-kpi-total',  'label' => 'Events Today',  'val' => $stats['today_count'],        'sub' => 'All platforms',   'icon' => 'signal',       'color' => 'teal'   ],
             [ 'id' => 'st-kpi-rate',   'label' => 'Success Rate',  'val' => $stats['success_rate'] . '%', 'sub' => 'Last 7 days',     'icon' => 'check-circle', 'color' => 'green'  ],
@@ -260,13 +252,21 @@ class ServerTrack_Dashboard {
                         Events by Platform (7d)
                     </span>
                 </div>
-                <div style="max-width:260px;margin:0 auto;">
-                    <canvas id="st-plat-chart" height="180"></canvas>
+                <?php
+                /* FIX Bug 2: wrap canvas in a height-constrained div instead of
+                   relying on the height="" attribute, which Chart.js responsive
+                   mode ignores without maintainAspectRatio:false. */
+                ?>
+                <div style="position:relative;max-width:260px;height:180px;margin:0 auto;">
+                    <canvas id="st-plat-chart"></canvas>
                 </div>
                 <div style="display:flex;justify-content:center;gap:16px;margin-top:12px;flex-wrap:wrap;">
                     <?php foreach ( $breakdown['by_platform'] as $plat => $cnt ) : ?>
                     <span style="font-size:12px;color:var(--st-muted);">
-                        <strong style="color:var(--st-text);"><?php echo esc_html( $cnt ); ?></strong>
+                        <?php
+                        /* FIX Bug 4: add ID to each legend span so JS refresh can update the numbers */
+                        ?>
+                        <strong id="st-plat-count-<?php echo esc_attr( $plat ); ?>" style="color:var(--st-text);"><?php echo esc_html( $cnt ); ?></strong>
                         <?php echo esc_html( ucfirst( $plat ) ); ?>
                     </span>
                     <?php endforeach; ?>
@@ -280,7 +280,13 @@ class ServerTrack_Dashboard {
                         Top Event Types (7d)
                     </span>
                 </div>
-                <canvas id="st-events-chart" height="180"></canvas>
+                <?php
+                /* FIX Bug 3: wrap canvas in a height-constrained div. Horizontal bar
+                   charts (indexAxis:'y') collapse to 0px without this + maintainAspectRatio:false. */
+                ?>
+                <div style="position:relative;height:180px;">
+                    <canvas id="st-events-chart"></canvas>
+                </div>
             </div>
         </div>
 
@@ -395,14 +401,21 @@ class ServerTrack_Dashboard {
                         tension:.4,fill:true,pointRadius:4,pointBackgroundColor:'#6366f1',
                         pointBorderColor:'#fff',pointBorderWidth:2
                     }]},
-                    options:{responsive:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return ' EMQ: '+c.parsed.y.toFixed(1);}}}},
+                    options:{responsive:true,maintainAspectRatio:true,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return ' EMQ: '+c.parsed.y.toFixed(1);}}}},
                         scales:{y:{min:0,max:10,ticks:{stepSize:2,font:{size:10}},grid:{color:'#f3f4f6'}},x:{grid:{display:false},ticks:{font:{size:10}}}}}
                 });
             })();
 
+            // ── FIX Bug 1 & 5: Store chart instances outside IIFEs so doRefresh()
+            //    can call .update() on them when new data arrives from AJAX.
+            var platChart   = null;
+            var eventsChart = null;
+
             // ── Platform breakdown doughnut ───────────────────────────────────
+            // FIX Bug 2: maintainAspectRatio:false so Chart.js respects the
+            // parent div's explicit height:180px instead of collapsing to 0px.
             (function(){
-                var pd = <?php echo wp_json_encode( $breakdown['by_platform'] ); ?>;
+                var pd     = <?php echo wp_json_encode( $breakdown['by_platform'] ); ?>;
                 var labels = Object.keys(pd).map(function(k){ return k.charAt(0).toUpperCase()+k.slice(1); });
                 var data   = Object.values(pd);
                 var ctx    = document.getElementById('st-plat-chart');
@@ -411,22 +424,30 @@ class ServerTrack_Dashboard {
                     ctx.parentElement.insertAdjacentHTML('beforeend','<p style="color:var(--st-faint);font-size:12px;text-align:center;margin-top:8px;">No data yet.</p>');
                     ctx.style.display='none'; return;
                 }
-                new Chart(ctx,{
+                platChart = new Chart(ctx,{
                     type:'doughnut',
                     data:{labels:labels,datasets:[{
                         data:data,
                         backgroundColor:['#6366f1','#0ea5e9','#22c55e'],
                         borderWidth:2,borderColor:'#fff',hoverOffset:6
                     }]},
-                    options:{responsive:true,cutout:'65%',
-                        plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:12,boxWidth:10}},
-                        tooltip:{callbacks:{label:function(c){return ' '+c.label+': '+c.parsed+' events';}}}}}
+                    options:{
+                        responsive:true,
+                        maintainAspectRatio:false,
+                        cutout:'65%',
+                        plugins:{
+                            legend:{position:'bottom',labels:{font:{size:11},padding:12,boxWidth:10}},
+                            tooltip:{callbacks:{label:function(c){return ' '+c.label+': '+c.parsed+' events';}}}
+                        }
+                    }
                 });
             })();
 
             // ── Top event types bar chart ─────────────────────────────────────
+            // FIX Bug 3: maintainAspectRatio:false so horizontal bar chart
+            // respects the parent div's explicit height:180px.
             (function(){
-                var te = <?php echo wp_json_encode( $breakdown['top_events'] ); ?>;
+                var te     = <?php echo wp_json_encode( $breakdown['top_events'] ); ?>;
                 var labels = Object.keys(te);
                 var data   = Object.values(te);
                 var ctx    = document.getElementById('st-events-chart');
@@ -435,16 +456,20 @@ class ServerTrack_Dashboard {
                     ctx.parentElement.insertAdjacentHTML('beforeend','<p style="color:var(--st-faint);font-size:12px;text-align:center;margin-top:8px;">No data yet.</p>');
                     ctx.style.display='none'; return;
                 }
-                new Chart(ctx,{
+                eventsChart = new Chart(ctx,{
                     type:'bar',
                     data:{labels:labels,datasets:[{
                         label:'Events',data:data,
                         backgroundColor:'rgba(99,102,241,.75)',
                         borderRadius:5,borderSkipped:false
                     }]},
-                    options:{indexAxis:'y',responsive:true,
+                    options:{
+                        indexAxis:'y',
+                        responsive:true,
+                        maintainAspectRatio:false,
                         plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return ' '+c.parsed.x+' events';}}}},
-                        scales:{x:{grid:{color:'#f3f4f6'},ticks:{font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:11}}}}}
+                        scales:{x:{grid:{color:'#f3f4f6'},ticks:{font:{size:10}}},y:{grid:{display:false},ticks:{font:{size:11}}}}
+                    }
                 });
             })();
 
@@ -472,10 +497,12 @@ class ServerTrack_Dashboard {
             // ── Auto-refresh ──────────────────────────────────────────────────
             var refreshTimer = null;
             function doRefresh(){
-                var btn = document.getElementById('st-manual-refresh');
-                if(btn) btn.classList.add('st-spinning');
+                var btn     = document.getElementById('st-manual-refresh');
                 var spinner = document.getElementById('st-log-spinner');
+                if(btn) btn.classList.add('st-spinning');
                 if(spinner) spinner.style.display='inline-block';
+
+                // Refresh log rows
                 fetch(ajaxUrl+'?action=servertrack_log_data&nonce='+encodeURIComponent(nonce))
                     .then(function(r){return r.json();})
                     .then(function(res){
@@ -492,7 +519,37 @@ class ServerTrack_Dashboard {
                         if(btn) btn.classList.remove('st-spinning');
                         if(spinner) spinner.style.display='none';
                     });
+
+                // FIX Bug 1 & 5: Refresh chart data via servertrack_stats_breakdown AJAX.
+                // Previously this endpoint was registered in PHP but never called from JS,
+                // so charts were always frozen at their initial PHP-rendered values.
+                fetch(ajaxUrl+'?action=servertrack_stats_breakdown&nonce='+encodeURIComponent(nonce))
+                    .then(function(r){return r.json();})
+                    .then(function(res){
+                        if(!res.success || !res.data) return;
+                        var bd = res.data;
+
+                        // Update platform doughnut data
+                        if(platChart && bd.by_platform){
+                            platChart.data.datasets[0].data = Object.values(bd.by_platform);
+                            platChart.update();
+                            // FIX Bug 4: update the static PHP-rendered legend numbers
+                            Object.keys(bd.by_platform).forEach(function(plat){
+                                var el = document.getElementById('st-plat-count-'+plat);
+                                if(el) el.textContent = bd.by_platform[plat] || 0;
+                            });
+                        }
+
+                        // Update top events bar chart data
+                        if(eventsChart && bd.top_events){
+                            eventsChart.data.labels   = Object.keys(bd.top_events);
+                            eventsChart.data.datasets[0].data = Object.values(bd.top_events);
+                            eventsChart.update();
+                        }
+                    })
+                    .catch(function(){});
             }
+
             var manualBtn = document.getElementById('st-manual-refresh');
             if(manualBtn) manualBtn.addEventListener('click', doRefresh);
             refreshTimer = setInterval(doRefresh, 30000);
@@ -532,7 +589,7 @@ class ServerTrack_Dashboard {
     }
 
     // ────────────────────────────────────────────────────────────────────────
-    // LOG ROWS RENDERER  — SVG status icons, no emoji
+    // LOG ROWS RENDERER
     // ────────────────────────────────────────────────────────────────────────
 
     public static function render_log_rows( array $logs ): void {
