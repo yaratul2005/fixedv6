@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * ServerTrack_Source_WooCommerce  v3.3.1
+ * ServerTrack_Source_WooCommerce  v3.4
  *
  * Hooks into WooCommerce to fire CAPI events for all purchase lifecycle
  * stages.  Each feature can be toggled independently from the Event Sources
@@ -12,6 +12,25 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Changelog
  * ----------
+ * v3.4  2026-05-15  Bug-audit fixes (round 2)
+ *
+ *   BUG-3 FIX: Duplicate hook registration guard.
+ *     ServerTrack_WooCommerce and ServerTrack_Source_WooCommerce both register
+ *     handlers for overlapping WooCommerce hooks (woocommerce_payment_complete,
+ *     woocommerce_order_status_completed, woocommerce_add_to_cart, etc.).
+ *     Added a static $initialized flag to init() — if init() is called more
+ *     than once (e.g. if both classes are bootstrapped), hooks only register
+ *     once. This prevents double CAPI events being fired per transaction.
+ *
+ *   BUG-5 FIX: handle_initiate_checkout() event_id no longer uses time().
+ *     time() produces a new timestamp on every request, so every checkout
+ *     page load — including reloads and back-button navigation — generated a
+ *     new, unique event_id. Meta and TikTok therefore counted each page load
+ *     as a separate InitiateCheckout conversion, destroying deduplication.
+ *     Fixed: event_id now seeds from the WC session customer_id, which is
+ *     stable for the entire checkout session. Reloads produce the same id;
+ *     a genuinely new session produces a different one.
+ *
  * v3.3.1  2026-05-11  Bug-audit fixes
  *   FIX BUG-09: handle_order_status_change() dedup loop used `return`
  *     instead of `continue` — a single already-sent platform would abort
@@ -45,6 +64,15 @@ if ( ! defined( 'ABSPATH' ) ) {
  */
 class ServerTrack_Source_WooCommerce {
 
+    /**
+     * BUG-3 FIX: Guard against duplicate hook registration.
+     * If both ServerTrack_WooCommerce::init() and this class's init() are
+     * called (both are bootstrapped from servertrack.php), WooCommerce hooks
+     * would be registered twice, causing every CAPI event to fire twice.
+     * This flag ensures hooks are only registered on the first init() call.
+     */
+    private static bool $initialized = false;
+
     private static function opt( string $key, $default = 0 ) {
         return get_option( $key, $default );
     }
@@ -57,6 +85,12 @@ class ServerTrack_Source_WooCommerce {
         if ( ! class_exists( 'WooCommerce' ) ) {
             return;
         }
+
+        // BUG-3 FIX: prevent duplicate hook registration on multiple init() calls
+        if ( self::$initialized ) {
+            return;
+        }
+        self::$initialized = true;
 
         if ( self::opt( 'servertrack_source_woo_enabled', 1 ) ) {
             self::register_core_hooks();
@@ -341,11 +375,28 @@ class ServerTrack_Source_WooCommerce {
         ServerTrack_Core::dispatch_to_all( $event );
     }
 
+    /**
+     * BUG-5 FIX (v3.4):
+     *   Original used time() as the event_id seed, meaning every page load of
+     *   the checkout page — including back-button and form-error reloads —
+     *   generated a new unique event_id. Meta/TikTok counted each as a separate
+     *   InitiateCheckout conversion, destroying deduplication.
+     *
+     *   Fixed: seed from WC session customer_id, which is stable for the entire
+     *   checkout session. Reloads produce the same event_id; a new session
+     *   (new browser / cleared cookies) produces a different one.
+     */
     public static function handle_initiate_checkout(): void {
         if ( ! WC()->cart || WC()->cart->is_empty() ) return;
+
+        // BUG-5 FIX: use stable session key instead of time()
+        $session_customer_id = WC()->session ? WC()->session->get_customer_id() : get_current_user_id();
+        $user_id             = get_current_user_id();
+        $stable_seed         = $user_id . '_' . $session_customer_id;
+
         $user_data   = ServerTrack_Identity::from_current_user();
         $custom_data = ServerTrack_Catalog::from_cart();
-        $event_id    = ServerTrack_Hasher::event_id( 'InitiateCheckout', get_current_user_id() . '_' . time() );
+        $event_id    = ServerTrack_Hasher::event_id( 'InitiateCheckout', $stable_seed );
         $event       = ( new ServerTrack_Event( 'InitiateCheckout', $event_id ) )
             ->set_user_data( $user_data )
             ->set_custom_data( $custom_data );

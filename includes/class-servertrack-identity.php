@@ -4,12 +4,38 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * ServerTrack_Identity  v1.0
+ * ServerTrack_Identity  v1.1
  *
- * Feature #1 — Cross-Device Identity Stitching.
+ * Changelog
+ * ----------
+ * v1.1  2026-05-15  Bug-fix
+ *   BUG-4 FIX: ensure_uid() had a race condition on new user creation.
  *
- * Stape.io and GTM server containers have ZERO access to your WordPress user
- * table. This class exploits that advantage:
+ *   Problem:
+ *     The original implementation called wp_generate_uuid4() — a random UUID —
+ *     when no UID existed in user meta. The comment claimed the UID was
+ *     "deterministic", but wp_generate_uuid4() is purely random. If two
+ *     concurrent requests (e.g. two browser tabs placing a checkout at the
+ *     same millisecond for a brand-new account) both called ensure_uid()
+ *     before either saved to user meta, they each generated a DIFFERENT UUID.
+ *     One gets stored; the other is discarded. The user ends up with one
+ *     external_id on Platform A and a different external_id on Platform B —
+ *     breaking cross-device identity stitching silently.
+ *
+ *   Fix:
+ *     Replace wp_generate_uuid4() with hash_hmac('sha256', ...) seeded from
+ *     user_id + site_url + SECURE_AUTH_KEY. This is fully deterministic:
+ *     concurrent requests for the same new user always produce the identical
+ *     UID. update_user_meta() is still called to cache it, but even if two
+ *     requests race, both compute the same value so the race is harmless.
+ *     The result is a 64-char hex string — still opaque and unguessable
+ *     externally, but stable per user per WordPress install.
+ *
+ * v1.0
+ *   Feature #1 — Cross-Device Identity Stitching.
+ *
+ *   Stape.io and GTM server containers have ZERO access to your WordPress user
+ *   table. This class exploits that advantage:
  *
  *   - Every logged-in WP user gets a persistent, stable `servertrack_uid`
  *     stored in user meta. This UID is SHA-256 hashed and sent as external_id
@@ -86,6 +112,16 @@ class ServerTrack_Identity {
      * Ensures a stable UID exists in user meta.
      * Idempotent — safe to call repeatedly.
      *
+     * BUG-4 FIX (v1.1): Previously used wp_generate_uuid4() which is random,
+     * not deterministic. Two concurrent requests for a new user generated
+     * different UIDs, causing one to be silently discarded and breaking
+     * cross-device identity stitching.
+     *
+     * Now uses HMAC-SHA256(user_id + site_url, SECURE_AUTH_KEY) which is
+     * fully deterministic: concurrent requests always produce the same UID.
+     * Even if update_user_meta() is called twice in a race, both writes are
+     * identical so there is no data corruption.
+     *
      * @param int $user_id
      * @return string The raw (unhashed) UID string
      */
@@ -94,9 +130,12 @@ class ServerTrack_Identity {
         if ( ! empty( $existing ) && is_string( $existing ) ) {
             return $existing;
         }
-        // Generate a site-scoped UUID v4 seeded from user ID + site secret
-        // Deterministic: same user always gets same UID on this site
-        $uid = wp_generate_uuid4();
+
+        // Deterministic: same user on same WP install always produces same UID.
+        // SECURE_AUTH_KEY makes it site-specific and unguessable externally.
+        $key = defined( 'SECURE_AUTH_KEY' ) ? SECURE_AUTH_KEY : wp_salt( 'secure_auth' );
+        $uid = hash_hmac( 'sha256', $user_id . '|' . get_site_url(), $key );
+
         update_user_meta( $user_id, self::USER_META_KEY, $uid );
         return $uid;
     }
