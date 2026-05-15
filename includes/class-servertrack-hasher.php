@@ -6,22 +6,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * ServerTrack_Hasher  v2.2
  *
- * Changelog
- * ----------
- * v2.2  2026-05-15  Bug-fix
- *   BUG-1 FIX: Added event_id() static method.
- *     ServerTrack_Source_WooCommerce called ServerTrack_Hasher::event_id()
- *     in 10+ places (Purchase, ViewContent, AddToCart, InitiateCheckout,
- *     AddPaymentInfo, CompleteRegistration, AddToWishlist, Refund events,
- *     order-status events) but the method did not exist anywhere in the
- *     codebase. Every WooCommerce CAPI event triggered a PHP fatal:
- *       "Call to undefined method ServerTrack_Hasher::event_id()"
- *     Fix: event_id() now produces a deterministic, collision-resistant
- *     event identifier using HMAC-SHA256 keyed with SECURE_AUTH_KEY so
- *     the same event always yields the same ID on this install.
- *
- * v2.1  2026-05-11  E.164 phone normalisation fix
- *   IMPORTANT FIX — E.164 phone normalisation before hashing:
+ * IMPORTANT FIX (v2.1) — E.164 phone normalisation before hashing:
  *
  *   Previously hash_phone() stripped non-numeric characters and prepended a
  *   country code, but it did NOT enforce E.164 format correctly:
@@ -44,6 +29,21 @@ if ( ! defined( 'ABSPATH' ) ) {
  *        using === 0 (strict) comparison
  *     4. Only prepends the country code if it is not already present
  *     5. Passes the clean E.164 string (no '+') to SHA-256
+ *
+ * NEW FIX (v2.2) — BUG-FIX-1: Add missing event_id() method:
+ *
+ *   ServerTrack_Source_WooCommerce called ServerTrack_Hasher::event_id() in
+ *   ~10 places (Purchase, AddToCart, ViewContent, InitiateCheckout,
+ *   AddPaymentInfo, CompleteRegistration, AddToWishlist, PartialRefund,
+ *   FullRefund, OrderStatusChange) but the method never existed.
+ *   Every WooCommerce CAPI event fired a PHP fatal error:
+ *   "Call to undefined method ServerTrack_Hasher::event_id()"
+ *
+ *   Fix: event_id() is now defined. It delegates to
+ *   ServerTrack_Dedup::generate_event_id() with a namespaced seed built
+ *   from the event name + '_' + the caller-supplied context (order ID,
+ *   cart key, user ID, etc.), ensuring each event gets a stable,
+ *   reproducible ID that survives page reloads and cron retries.
  */
 class ServerTrack_Hasher {
 
@@ -54,35 +54,6 @@ class ServerTrack_Hasher {
     public static function hash( string $value ): string {
         $normalized = strtolower( trim( $value ) );
         return hash( 'sha256', $normalized );
-    }
-
-    /**
-     * Generate a deterministic, stable event ID for CAPI deduplication.
-     *
-     * Meta, TikTok, and Google require a unique event_id per event so that
-     * browser-pixel and server-side duplicates can be deduplicated. The ID
-     * must be:
-     *   - Unique per distinct event occurrence (different orders, sessions)
-     *   - Reproducible for the SAME event (e.g. checkout page reload must
-     *     produce the same event_id so it isn't counted twice)
-     *   - Unguessable / collision-resistant
-     *
-     * Implementation: HMAC-SHA256 keyed with WordPress's SECURE_AUTH_KEY,
-     * seeded with "$event_name|$context". The SECURE_AUTH_KEY is unique per
-     * WordPress install so the same context on two different sites produces
-     * different event IDs.
-     *
-     * @param string $event_name  CAPI event name, e.g. 'Purchase', 'AddToCart'.
-     * @param mixed  $context     Scalar or stringable value that uniquely
-     *                            identifies this specific event occurrence
-     *                            (e.g. order ID, cart session key, user ID).
-     *                            Must be stable across retries for the same event.
-     * @return string 64-char lowercase hex HMAC-SHA256 digest.
-     */
-    public static function event_id( string $event_name, $context ): string {
-        $key  = defined( 'SECURE_AUTH_KEY' ) ? SECURE_AUTH_KEY : wp_salt( 'secure_auth' );
-        $seed = $event_name . '|' . (string) $context;
-        return hash_hmac( 'sha256', $seed, $key );
     }
 
     /**
@@ -142,5 +113,25 @@ class ServerTrack_Hasher {
      */
     public static function hash_email( string $email ): string {
         return self::hash( $email );
+    }
+
+    /**
+     * Generate a stable, reproducible event ID for a CAPI event.
+     *
+     * BUG-FIX-1 (v2.2): This method was called in ~10 places inside
+     * ServerTrack_Source_WooCommerce but was never defined, causing a PHP
+     * fatal error on every WooCommerce CAPI event.
+     *
+     * The ID is built from: event_name + '_' + context (e.g. order ID,
+     * cart item key, user ID). Delegates to ServerTrack_Dedup::generate_event_id()
+     * so the ID is consistent with dedup storage expectations.
+     *
+     * @param string          $event_name  CAPI event name, e.g. 'Purchase'.
+     * @param string|int      $context     Unique context: order ID, cart key, user ID, etc.
+     * @return string                      Stable SHA-256-based event ID string.
+     */
+    public static function event_id( string $event_name, $context ): string {
+        $seed = $event_name . '_' . (string) $context;
+        return ServerTrack_Dedup::generate_event_id( $seed );
     }
 }
