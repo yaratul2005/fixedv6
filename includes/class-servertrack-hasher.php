@@ -4,31 +4,15 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * ServerTrack_Hasher  v2.1
+ * ServerTrack_Hasher  v2.2
  *
- * IMPORTANT FIX (v2.1) — E.164 phone normalisation before hashing:
+ * v2.2  2026-05-15  Added event_id() method — was called in 10 places across
+ *   Source_WooCommerce (AddToCart, Purchase, ViewContent, InitiateCheckout,
+ *   AddPaymentInfo, CompleteRegistration, AddToWishlist, PartialRefund,
+ *   FullRefund, OrderStatusChange) but was never defined. Caused PHP Fatal
+ *   Error on every WooCommerce event, including Add to Cart.
  *
- *   Previously hash_phone() stripped non-numeric characters and prepended a
- *   country code, but it did NOT enforce E.164 format correctly:
- *
- *     - A Bangladeshi number stored as '01712345678' with country_code = '880'
- *       was hashed as '88001712345678' — WRONG. E.164 is '+8801712345678'
- *       which after stripping '+' and leading zeros becomes '8801712345678'.
- *     - The function used strpos() to check if the number started with the
- *       country code, but strpos() returns 0 (falsy!) when the number DOES
- *       start with the code — so it always prepended, producing double prefixes
- *       like '880880...' for numbers already stored with the country code.
- *
- *   Meta requires phones to be normalised to E.164 (without '+') before SHA-256
- *   hashing. A wrong hash produces zero match signal for that customer.
- *
- *   Fix: hash_phone() now:
- *     1. Strips all non-numeric characters
- *     2. Strips leading zeros (E.164 has none after country code)
- *     3. Checks if the result ALREADY starts with the country code
- *        using === 0 (strict) comparison
- *     4. Only prepends the country code if it is not already present
- *     5. Passes the clean E.164 string (no '+') to SHA-256
+ * v2.1  E.164 phone normalisation fix (see hash_phone() docblock).
  */
 class ServerTrack_Hasher {
 
@@ -56,7 +40,6 @@ class ServerTrack_Hasher {
      *                              Pass empty string to skip prepending.
      */
     public static function hash_phone( string $phone, string $country_code = '' ): string {
-        // Step 1: strip everything except digits
         $digits = preg_replace( '/[^0-9]/', '', $phone );
 
         if ( '' === $digits ) {
@@ -67,16 +50,9 @@ class ServerTrack_Hasher {
             $cc = preg_replace( '/[^0-9]/', '', $country_code );
 
             if ( '' !== $cc ) {
-                // Step 2: check if number already starts with the country code.
-                // Use === 0 (strict), NOT just strpos() — strpos returns 0 when
-                // the string DOES start with the needle, which is falsy in PHP.
                 if ( strpos( $digits, $cc ) === 0 ) {
-                    // Already has country code — use as-is
                     $e164 = $digits;
                 } else {
-                    // Strip a leading zero from the national number before prepending.
-                    // Most national formats have a leading 0 that E.164 drops.
-                    // e.g. BD '01712345678' → strip '0' → '1712345678' → '8801712345678'
                     $national = ltrim( $digits, '0' );
                     $e164     = $cc . $national;
                 }
@@ -87,16 +63,35 @@ class ServerTrack_Hasher {
             $e164 = $digits;
         }
 
-        // Step 3: hash the clean E.164 digits string (lowercase of digits = itself)
         return hash( 'sha256', $e164 );
     }
 
     /**
      * Hash an email address.
-     * Normalises to lowercase + trim (RFC 5321 local-part is case-insensitive
-     * in practice and Meta/TikTok both require lowercase).
+     * Normalises to lowercase + trim.
      */
     public static function hash_email( string $email ): string {
         return self::hash( $email );
+    }
+
+    /**
+     * Generate a stable, unique event ID for CAPI deduplication.
+     *
+     * Builds a namespaced seed from the event name + context, then delegates
+     * to ServerTrack_Dedup::generate_event_id() for the final hash/UUID output.
+     *
+     * Called by ServerTrack_Source_WooCommerce for all 10 CAPI events:
+     *   Purchase, ViewContent, AddToCart, InitiateCheckout, AddPaymentInfo,
+     *   CompleteRegistration, AddToWishlist, PartialRefund, FullRefund,
+     *   Lead / Contact / SubmitForm (OrderStatusChange).
+     *
+     * @param string     $event_name  CAPI event name, e.g. 'Purchase', 'AddToCart'.
+     * @param int|string $context     Disambiguating context — order ID, cart item key,
+     *                                user ID, or any unique string for this event instance.
+     * @return string  Event ID string safe for Meta / TikTok / Google CAPI payloads.
+     */
+    public static function event_id( string $event_name, $context ): string {
+        $seed = $event_name . '_' . $context;
+        return ServerTrack_Dedup::generate_event_id( $seed );
     }
 }

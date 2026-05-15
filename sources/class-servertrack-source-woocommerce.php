@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * ServerTrack_Source_WooCommerce  v3.3.1
+ * ServerTrack_Source_WooCommerce  v3.3.2
  *
  * Hooks into WooCommerce to fire CAPI events for all purchase lifecycle
  * stages.  Each feature can be toggled independently from the Event Sources
@@ -12,6 +12,17 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * Changelog
  * ----------
+ * v3.3.2  2026-05-15  Bug-audit fixes (continued)
+ *   FIX BUG-FIX-4: handle_initiate_checkout() event_id used time() as
+ *     the seed — this generated a brand-new event ID on every page load,
+ *     completely breaking deduplication on checkout page reloads (back
+ *     button, form-validation errors). Meta/TikTok counted each reload as
+ *     a separate InitiateCheckout conversion.
+ *     Fix: replaced time() with a stable WC session key:
+ *       get_current_user_id() . '_' . WC()->session->get_customer_id()
+ *     The session customer_id is stable for the lifetime of the WC session,
+ *     so repeated checkout page views produce the same event_id.
+ *
  * v3.3.1  2026-05-11  Bug-audit fixes
  *   FIX BUG-09: handle_order_status_change() dedup loop used `return`
  *     instead of `continue` — a single already-sent platform would abort
@@ -341,11 +352,24 @@ class ServerTrack_Source_WooCommerce {
         ServerTrack_Core::dispatch_to_all( $event );
     }
 
+    /**
+     * BUG-FIX-4 (v3.3.2):
+     *   The original event_id seed used time() — this produced a brand-new
+     *   event ID on every page load, completely breaking deduplication.
+     *   Meta/TikTok counted each checkout page view as a separate conversion.
+     *
+     *   Fix: use a stable WC session key: user_id + WC customer_id.
+     *   The WC session customer_id is stable for the entire session,
+     *   so repeated checkout page views (back button, form errors) all
+     *   produce the same event_id and are correctly deduplicated.
+     */
     public static function handle_initiate_checkout(): void {
         if ( ! WC()->cart || WC()->cart->is_empty() ) return;
+        $user_id     = get_current_user_id();
+        $session_key = $user_id . '_' . ( WC()->session ? WC()->session->get_customer_id() : 'guest' );
         $user_data   = ServerTrack_Identity::from_current_user();
         $custom_data = ServerTrack_Catalog::from_cart();
-        $event_id    = ServerTrack_Hasher::event_id( 'InitiateCheckout', get_current_user_id() . '_' . time() );
+        $event_id    = ServerTrack_Hasher::event_id( 'InitiateCheckout', $session_key );
         $event       = ( new ServerTrack_Event( 'InitiateCheckout', $event_id ) )
             ->set_user_data( $user_data )
             ->set_custom_data( $custom_data );

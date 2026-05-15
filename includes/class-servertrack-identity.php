@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * ServerTrack_Identity  v1.0
+ * ServerTrack_Identity  v1.1
  *
  * Feature #1 — Cross-Device Identity Stitching.
  *
@@ -23,6 +23,29 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  *   - The UID is generated once per user and never changes, so Meta's identity
  *     graph can merge events across months of browsing history.
+ *
+ * Changelog
+ * ----------
+ * v1.1  2026-05-15  BUG-FIX-5: ensure_uid() race condition + misleading comment
+ *
+ *   The original ensure_uid() implementation:
+ *     1. Had a comment claiming it was "Deterministic: same user always gets
+ *        same UID on this site" — which was FALSE. It called wp_generate_uuid4(),
+ *        a PRNG-based function that produces a different random value on every
+ *        invocation.
+ *     2. Had a race condition: two concurrent requests for the same new user
+ *        each called wp_generate_uuid4() before either saved the meta value,
+ *        producing two DIFFERENT UIDs — one was stored, the other silently
+ *        discarded. The user could get different external_id values across
+ *        platforms depending on which request "won" the race.
+ *
+ *   Fix: replaced wp_generate_uuid4() with a deterministic hash_hmac() call:
+ *     hash_hmac( 'sha256', $user_id . get_site_url(), SECURE_AUTH_KEY )
+ *
+ *   This is genuinely deterministic: the same user_id + site_url + secret key
+ *   always produce the same UID, on every PHP process, simultaneously. The race
+ *   condition is eliminated because every concurrent request generates the
+ *   identical value — it does not matter which request "wins" the meta write.
  *
  * Usage:
  *   ServerTrack_Identity::init()    — call from Core::init()
@@ -84,7 +107,18 @@ class ServerTrack_Identity {
 
     /**
      * Ensures a stable UID exists in user meta.
-     * Idempotent — safe to call repeatedly.
+     * Idempotent — safe to call repeatedly from concurrent requests.
+     *
+     * BUG-FIX-5 (v1.1):
+     *   The previous implementation used wp_generate_uuid4() — a PRNG that
+     *   produces a different value on every call. Two concurrent requests for
+     *   a new user would race to store different UIDs, causing inconsistent
+     *   external_id values across platforms.
+     *
+     *   Fix: use hash_hmac() with SECURE_AUTH_KEY as the HMAC secret.
+     *   This is genuinely deterministic — any number of concurrent processes
+     *   always derive the exact same UID for the same user_id, so the race
+     *   condition is eliminated at the source.
      *
      * @param int $user_id
      * @return string The raw (unhashed) UID string
@@ -94,9 +128,12 @@ class ServerTrack_Identity {
         if ( ! empty( $existing ) && is_string( $existing ) ) {
             return $existing;
         }
-        // Generate a site-scoped UUID v4 seeded from user ID + site secret
-        // Deterministic: same user always gets same UID on this site
-        $uid = wp_generate_uuid4();
+
+        // BUG-FIX-5: Deterministic UID — same user_id + site always → same UID.
+        // SECURE_AUTH_KEY is a site-specific secret defined in wp-config.php,
+        // ensuring the UID is unguessable even if user IDs are public knowledge.
+        $uid = hash_hmac( 'sha256', $user_id . get_site_url(), SECURE_AUTH_KEY );
+
         update_user_meta( $user_id, self::USER_META_KEY, $uid );
         return $uid;
     }
