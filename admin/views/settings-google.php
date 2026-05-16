@@ -12,9 +12,6 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  *   - Inline step-by-step guide for Google Cloud Console setup.
  */
 ?>
-<form method="post" action="options.php">
-    <?php settings_fields( 'servertrack_settings' ); ?>
-
     <table class="form-table" role="presentation">
 
         <!-- Enable / Disable -->
@@ -140,6 +137,18 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                 </td>
             </tr>
 
+            <!-- Conversion Label -->
+            <tr>
+                <th scope="row"><label for="st_google_conversion_label"><?php esc_html_e( 'Conversion Label', 'servertrack' ); ?></label></th>
+                <td>
+                    <input type="text" id="st_google_conversion_label"
+                           name="servertrack_google_conversion_label"
+                           value="<?php echo esc_attr( get_option( 'servertrack_google_conversion_label', '' ) ); ?>"
+                           class="regular-text" placeholder="e.g. Aw2xL_..._Q">
+                    <p class="description"><?php esc_html_e( 'The conversion action label. Found alongside the ID in Google Ads.', 'servertrack' ); ?></p>
+                </td>
+            </tr>
+
             <!-- Developer Token -->
             <tr>
                 <th scope="row"><label for="st_google_developer_token"><?php esc_html_e( 'Developer Token', 'servertrack' ); ?></label></th>
@@ -188,9 +197,6 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 
         </table>
     </div><!-- /#st-google-fields -->
-
-    <?php submit_button( __( 'Save Google Settings', 'servertrack' ) ); ?>
-</form>
 
 <script>
 (function(){

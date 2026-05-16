@@ -217,4 +217,57 @@ class ServerTrack_Catalog {
 
         return apply_filters( 'servertrack_product_catalog_data', $data, $product );
     }
+
+    /**
+     * Build catalog data from an order.
+     */
+    public static function from_order( WC_Order $order ): array {
+        $custom_data = [
+            'currency' => $order->get_currency(),
+            'value'    => (float) $order->get_total(),
+            'order_id' => $order->get_id(),
+        ];
+        return self::enrich_purchase( $custom_data, $order );
+    }
+
+    /**
+     * Build summary catalog data from an order (e.g. for ViewContent).
+     */
+    public static function from_order_summary( WC_Order $order ): array {
+        $custom_data = [
+            'currency' => $order->get_currency(),
+            'value'    => (float) $order->get_total(),
+            'order_id' => $order->get_id(),
+        ];
+        return self::enrich_purchase( $custom_data, $order );
+    }
+
+    /**
+     * Build catalog data from the current WooCommerce cart.
+     */
+    public static function from_cart(): array {
+        $custom_data = [
+            'currency' => get_woocommerce_currency(),
+            'value'    => (float) WC()->cart->get_total( 'edit' ),
+            'contents' => [],
+            'content_ids' => [],
+            'content_type' => 'product',
+        ];
+        
+        foreach ( WC()->cart->get_cart() as $cart_item ) {
+            $product = $cart_item['data'];
+            if ( $product instanceof WC_Product ) {
+                $catalog = self::get_product_catalog_data( $product );
+                $custom_data['contents'][] = [
+                    'id'         => $catalog['id'],
+                    'quantity'   => $cart_item['quantity'],
+                    'item_price' => $catalog['price']
+                ];
+                $custom_data['content_ids'][] = $catalog['id'];
+            }
+        }
+        
+        $custom_data['content_ids'] = array_unique( $custom_data['content_ids'] );
+        return $custom_data;
+    }
 }
