@@ -249,6 +249,21 @@ class ServerTrack_Dedup {
     }
 
     /**
+     * Polymorphic mark_sent() — routes based on key type (int order_id vs string dedup_key).
+     * BUG-FIX (v2.5): Added to support ServerTrack_Core::dispatch_to_platforms() marking logic.
+     *
+     * @param int|string $key       Order ID (int) or string dedup key
+     * @param string     $platform  'meta' | 'google' | 'tiktok'
+     */
+    public static function mark_sent( $key, string $platform ): void {
+        if ( is_int( $key ) || ( is_string( $key ) && ctype_digit( $key ) ) ) {
+            self::mark_as_sent( (int) $key, $platform );
+        } else {
+            self::mark_string_sent( (string) $key, $platform );
+        }
+    }
+
+    /**
      * Reset all dedup flags and the event ID for a given order.
      *
      * Used by: wp servertrack test-purchase <order_id>
