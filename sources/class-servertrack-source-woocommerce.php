@@ -97,6 +97,7 @@ class ServerTrack_Source_WooCommerce {
         add_action( 'woocommerce_order_status_processing',  [ self::class, 'handle_purchase' ],              10, 1 );
         add_action( 'woocommerce_add_to_cart',              [ self::class, 'handle_add_to_cart' ],           10, 6 );
         add_action( 'woocommerce_before_checkout_form',     [ self::class, 'handle_initiate_checkout' ],     10    );
+        add_action( 'woocommerce_checkout_order_processed', [ 'ServerTrack_Consent', 'capture_for_order' ],  9, 1 );
         add_action( 'woocommerce_checkout_order_processed', [ self::class, 'handle_add_payment_info' ],      10, 1 );
         add_action( 'woocommerce_created_customer',         [ self::class, 'handle_complete_registration' ], 10, 1 );
         add_action( 'woocommerce_order_fully_refunded',     [ self::class, 'handle_full_refund' ],           10, 2 );
@@ -153,7 +154,7 @@ class ServerTrack_Source_WooCommerce {
             return; // All platforms already received this event
         }
 
-        $user_data   = ServerTrack_Identity::from_order( $order );
+        $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ];
         $custom_data = [
             'order_id'     => $order_id,
             'value'        => (float) $order->get_total(),
@@ -213,7 +214,7 @@ class ServerTrack_Source_WooCommerce {
             return; // All platforms already received this event
         }
 
-        $user_data   = ServerTrack_Identity::from_current_user();
+        $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_user( get_current_user_id() ) ];
         $custom_data = [
             'content_ids'  => [ (string) $product_id ],
             'content_name' => $product->get_name(),
@@ -269,7 +270,7 @@ class ServerTrack_Source_WooCommerce {
             return;
         }
 
-        $user_data   = ServerTrack_Identity::from_order( $order );
+        $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ];
         $custom_data = [
             'order_id'    => $order_id,
             'refund_id'   => $refund_id,
@@ -299,7 +300,7 @@ class ServerTrack_Source_WooCommerce {
           && ServerTrack_Dedup::already_sent( $order_id, 'google' ) ) {
             return;
         }
-        $user_data   = ServerTrack_Identity::from_order( $order );
+        $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ];
         $custom_data = ServerTrack_Catalog::from_order( $order );
         $event_id    = ServerTrack_Hasher::event_id( 'Purchase', $order_id );
         $event       = ( new ServerTrack_Event( 'Purchase', $event_id ) )
@@ -311,7 +312,7 @@ class ServerTrack_Source_WooCommerce {
     public static function handle_view_content( int $order_id ): void {
         $order = wc_get_order( $order_id );
         if ( ! $order ) return;
-        $user_data   = ServerTrack_Identity::from_order( $order );
+        $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ];
         $custom_data = ServerTrack_Catalog::from_order_summary( $order );
         $event_id    = ServerTrack_Hasher::event_id( 'ViewContent', $order_id );
         $event       = ( new ServerTrack_Event( 'ViewContent', $event_id ) )
@@ -336,7 +337,7 @@ class ServerTrack_Source_WooCommerce {
     ): void {
         $product = wc_get_product( $product_id );
         if ( ! $product ) return;
-        $user_data   = ServerTrack_Identity::from_current_user();
+        $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_user( get_current_user_id() ) ];
         $custom_data = [
             'content_ids'  => [ (string) $product_id ],
             'content_name' => $product->get_name(),
@@ -367,7 +368,7 @@ class ServerTrack_Source_WooCommerce {
         if ( ! WC()->cart || WC()->cart->is_empty() ) return;
         $user_id     = get_current_user_id();
         $session_key = $user_id . '_' . ( WC()->session ? WC()->session->get_customer_id() : 'guest' );
-        $user_data   = ServerTrack_Identity::from_current_user();
+        $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_user( get_current_user_id() ) ];
         $custom_data = ServerTrack_Catalog::from_cart();
         $event_id    = ServerTrack_Hasher::event_id( 'InitiateCheckout', $session_key );
         $event       = ( new ServerTrack_Event( 'InitiateCheckout', $event_id ) )
@@ -379,7 +380,7 @@ class ServerTrack_Source_WooCommerce {
     public static function handle_add_payment_info( int $order_id ): void {
         $order = wc_get_order( $order_id );
         if ( ! $order ) return;
-        $user_data   = ServerTrack_Identity::from_order( $order );
+        $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ];
         $custom_data = ServerTrack_Catalog::from_order_summary( $order );
         $event_id    = ServerTrack_Hasher::event_id( 'AddPaymentInfo', $order_id );
         $event       = ( new ServerTrack_Event( 'AddPaymentInfo', $event_id ) )
@@ -389,7 +390,7 @@ class ServerTrack_Source_WooCommerce {
     }
 
     public static function handle_complete_registration( int $customer_id ): void {
-        $user_data = ServerTrack_Identity::from_user_id( $customer_id );
+        $user_data = [ 'external_id' => ServerTrack_Identity::get_external_id_for_user( $customer_id ) ];
         $event_id  = ServerTrack_Hasher::event_id( 'CompleteRegistration', $customer_id );
         $event     = ( new ServerTrack_Event( 'CompleteRegistration', $event_id ) )
             ->set_user_data( $user_data )
@@ -417,7 +418,7 @@ class ServerTrack_Source_WooCommerce {
             return;
         }
 
-        $user_data   = ServerTrack_Identity::from_order( $order );
+        $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ];
         $custom_data = [
             'order_id'    => $order_id,
             'value'       => -(float) $order->get_total(),
