@@ -379,7 +379,7 @@ class ServerTrack_Dashboard {
         </div><!-- #servertrack-wrap -->
 
         <script>
-        (function(){
+        window.addEventListener('load', function(){
             var nonce   = <?php echo wp_json_encode( $nonce ); ?>;
             var ajaxUrl = <?php echo wp_json_encode( admin_url( 'admin-ajax.php' ) ); ?>;
 
@@ -583,7 +583,7 @@ class ServerTrack_Dashboard {
                     .catch(function(){ drainBtn.textContent = 'Error'; });
                 });
             }
-        })();
+        });
         </script>
         <?php
     }
