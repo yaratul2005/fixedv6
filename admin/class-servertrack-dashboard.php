@@ -169,8 +169,8 @@ class ServerTrack_Dashboard {
 
         <div class="st-refresh-badge">
             <span id="st-live-count" class="st-live-label">Live</span>
-            <span class="st-pulse" title="Auto-refreshing every 30s"></span>
-            <button class="st-refresh-btn" id="st-manual-refresh" title="Refresh now">
+            <span class="st-live-dot" title="Auto-refreshing every 30s"></span>
+            <button class="st-btn st-btn-secondary st-refresh-btn" id="st-manual-refresh" title="Refresh now">
                 <?php echo self::svg( 'refresh-cw' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
                 Refresh
                 <span class="st-spinner"></span>
