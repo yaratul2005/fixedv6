@@ -208,6 +208,13 @@ class ServerTrack_Google {
             $click_conversion['gclid'] = $ud['gclid'];
         }
 
+        // Google Consent Mode v2
+        $consent_granted = ServerTrack_Consent::is_granted( 'google', (int) ($event->custom_data['order_id'] ?? 0) );
+        $click_conversion['consent'] = [
+            'adUserData'        => $consent_granted ? 'GRANTED' : 'DENIED',
+            'adPersonalization' => $consent_granted ? 'GRANTED' : 'DENIED',
+        ];
+
         return [
             'conversions'    => [ $click_conversion ],
             'partialFailure' => true,

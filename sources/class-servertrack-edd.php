@@ -155,10 +155,10 @@ class ServerTrack_EDD {
         if ( $customer ) {
             $name_parts = explode( ' ', $customer->name, 2 );
             if ( ! empty( $name_parts[0] ) ) {
-                $user_data['first_name'] = ServerTrack_Hasher::hash( $name_parts[0] );
+                $user_data['first_name'] = ServerTrack_Hasher::hash_name( $name_parts[0] );
             }
             if ( ! empty( $name_parts[1] ) ) {
-                $user_data['last_name'] = ServerTrack_Hasher::hash( $name_parts[1] );
+                $user_data['last_name'] = ServerTrack_Hasher::hash_name( $name_parts[1] );
             }
         }
 
@@ -203,10 +203,10 @@ class ServerTrack_EDD {
             $user_data['email'] = ServerTrack_Hasher::hash_email( $payment->email );
         }
         if ( ! empty( $user_info['first_name'] ) ) {
-            $user_data['first_name'] = ServerTrack_Hasher::hash( $user_info['first_name'] );
+            $user_data['first_name'] = ServerTrack_Hasher::hash_name( $user_info['first_name'] );
         }
         if ( ! empty( $user_info['last_name'] ) ) {
-            $user_data['last_name'] = ServerTrack_Hasher::hash( $user_info['last_name'] );
+            $user_data['last_name'] = ServerTrack_Hasher::hash_name( $user_info['last_name'] );
         }
         if ( ! empty( $payment->ip ) ) {
             $user_data['ip'] = $payment->ip;

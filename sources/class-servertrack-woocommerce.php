@@ -380,9 +380,9 @@ class ServerTrack_WooCommerce {
         $email = sanitize_email( $new_customer_data['user_email'] ?? '' );
         if ( $email ) $user_data['email'] = ServerTrack_Hasher::hash_email( $email );
         $first = sanitize_text_field( $new_customer_data['first_name'] ?? '' );
-        if ( $first ) $user_data['first_name'] = ServerTrack_Hasher::hash( $first );
+        if ( $first ) $user_data['first_name'] = ServerTrack_Hasher::hash_name( $first );
         $last = sanitize_text_field( $new_customer_data['last_name'] ?? '' );
-        if ( $last ) $user_data['last_name'] = ServerTrack_Hasher::hash( $last );
+        if ( $last ) $user_data['last_name'] = ServerTrack_Hasher::hash_name( $last );
         $user_data['external_id'] = ServerTrack_Identity::get_external_id_for_user( $customer_id );
         $event = ( new ServerTrack_Event( 'CompleteRegistration', ServerTrack_Dedup::generate_event_id( 'reg_' . $customer_id ) ) )
             ->set_user_data( $user_data )
@@ -529,9 +529,12 @@ class ServerTrack_WooCommerce {
             static $cc_map = [ 'US'=>'1','CA'=>'1','GB'=>'44','AU'=>'61','DE'=>'49','FR'=>'33','IT'=>'39','ES'=>'34','NL'=>'31','SE'=>'46','NO'=>'47','DK'=>'45','FI'=>'358','CH'=>'41','AT'=>'43','IE'=>'353','NZ'=>'64','ZA'=>'27','IN'=>'91','BR'=>'55','BD'=>'880','PK'=>'92','NG'=>'234','MX'=>'52','JP'=>'81','KR'=>'82','SG'=>'65','MY'=>'60','TH'=>'66','PH'=>'63','ID'=>'62','VN'=>'84','HK'=>'852','TW'=>'886','AE'=>'971','SA'=>'966' ];
             $data['phone'] = ServerTrack_Hasher::hash_phone( $phone, $cc_map[ $order->get_billing_country() ] ?? '' );
         }
-        foreach ( [ 'first_name' => $order->get_billing_first_name(), 'last_name' => $order->get_billing_last_name(), 'city' => $order->get_billing_city(), 'state' => $order->get_billing_state(), 'zip' => $order->get_billing_postcode(), 'country' => $order->get_billing_country() ] as $key => $val ) {
-            if ( $val ) $data[ $key ] = ServerTrack_Hasher::hash( $val );
-        }
+        $val = $order->get_billing_first_name(); if ( $val ) $data['first_name'] = ServerTrack_Hasher::hash_name( $val );
+        $val = $order->get_billing_last_name(); if ( $val ) $data['last_name'] = ServerTrack_Hasher::hash_name( $val );
+        $val = $order->get_billing_city(); if ( $val ) $data['city'] = ServerTrack_Hasher::hash_city( $val );
+        $val = $order->get_billing_state(); if ( $val ) $data['state'] = ServerTrack_Hasher::hash_state( $val );
+        $val = $order->get_billing_postcode(); if ( $val ) $data['zip'] = ServerTrack_Hasher::hash_zip( $val );
+        $val = $order->get_billing_country(); if ( $val ) $data['country'] = ServerTrack_Hasher::hash_country( $val );
 
         $stored_ext = (string) $order->get_meta( '_servertrack_external_id' );
         $data['external_id'] = ! empty( $stored_ext )

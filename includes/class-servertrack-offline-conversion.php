@@ -183,28 +183,28 @@ class ServerTrack_OfflineConversion {
 		// Name fields
 		$first_name = $order->get_billing_first_name();
 		if ( $first_name ) {
-			$user_data['fn'] = ServerTrack_Hasher::hash( strtolower( trim( $first_name ) ) );
+			$user_data['fn'] = ServerTrack_Hasher::hash_name( $first_name );
 		}
 		$last_name = $order->get_billing_last_name();
 		if ( $last_name ) {
-			$user_data['ln'] = ServerTrack_Hasher::hash( strtolower( trim( $last_name ) ) );
+			$user_data['ln'] = ServerTrack_Hasher::hash_name( $last_name );
 		}
 
 		// Location fields
 		$city = $order->get_billing_city();
 		if ( $city ) {
-			$user_data['ct'] = ServerTrack_Hasher::hash( strtolower( trim( $city ) ) );
+			$user_data['ct'] = ServerTrack_Hasher::hash_city( $city );
 		}
 		$state = $order->get_billing_state();
 		if ( $state ) {
-			$user_data['st'] = ServerTrack_Hasher::hash( strtolower( trim( $state ) ) );
+			$user_data['st'] = ServerTrack_Hasher::hash_state( $state );
 		}
 		$zip = $order->get_billing_postcode();
 		if ( $zip ) {
-			$user_data['zp'] = ServerTrack_Hasher::hash( preg_replace( '/\s+/', '', strtolower( $zip ) ) );
+			$user_data['zp'] = ServerTrack_Hasher::hash_zip( $zip );
 		}
 		if ( $country ) {
-			$user_data['country'] = ServerTrack_Hasher::hash( strtolower( trim( $country ) ) );
+			$user_data['country'] = ServerTrack_Hasher::hash_country( $country );
 		}
 
 		return [
