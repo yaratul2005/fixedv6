@@ -23,6 +23,12 @@ $servertrack_options = [
     'servertrack_enabled',
     'servertrack_test_mode',
     'servertrack_consent_mode',
+    'servertrack_debug_mode',
+    'servertrack_retry_queue',
+    'servertrack_db_version',
+    'servertrack_log_max_entries',
+    'servertrack_dedup_ttl_days',
+    'servertrack_debug_log',
     // Meta CAPI
     'servertrack_meta_enabled',
     'servertrack_meta_pixel_id',
@@ -55,10 +61,21 @@ $servertrack_options = [
     'servertrack_scroll_depth',
     'servertrack_video_tracking',
     'servertrack_wishlist_tracking',
-    // Misc
-    'servertrack_debug_log',
-    'servertrack_dedup_ttl_days',
-    'servertrack_log_max_entries',
+    // Order Status, partial refunds, subscriptions
+    'servertrack_source_order_status_enabled',
+    'servertrack_source_wishlist_enabled',
+    'servertrack_source_partial_refund_enabled',
+    'servertrack_source_subscriptions_enabled',
+    // Missing platforms
+    'servertrack_snapchat_enabled',
+    'servertrack_snapchat_pixel_id',
+    'servertrack_snapchat_access_token',
+    'servertrack_pinterest_enabled',
+    'servertrack_pinterest_pixel_id',
+    'servertrack_pinterest_access_token',
+    'servertrack_linkedin_enabled',
+    'servertrack_linkedin_pixel_id',
+    'servertrack_linkedin_access_token',
 ];
 foreach ( $servertrack_options as $opt ) {
     delete_option( $opt );
@@ -77,6 +94,7 @@ $meta_keys = [
     '_servertrack_gclid',
     '_servertrack_api_sent',
     '_servertrack_renewal_sent',
+    '_servertrack_consent_v2',
 ];
 foreach ( $meta_keys as $meta_key ) {
     delete_post_meta_by_key( $meta_key );
@@ -116,19 +134,15 @@ $wpdb->query(
 
 // ── 6. Cancel all ServerTrack cron hooks ──────────────────────────────────────
 $cron_hooks = [
-    // Purchase / async sends
-    'servertrack_send_woo_purchase',
-    'servertrack_send_woo_view_content',
-    'servertrack_send_woo_refund',
-    'servertrack_send_edd_purchase',
-    'servertrack_send_renewal_purchase',
-    'servertrack_send_subscription_cancellation',
-    // Retry processor (v3.1+ correct name)
-    'servertrack_process_retry',
-    // Cart abandonment
-    'servertrack_check_abandonments',
+    'servertrack_process_retry_queue',
+    'servertrack_check_abandonment',
 ];
 foreach ( $cron_hooks as $hook ) {
     wp_clear_scheduled_hook( $hook );
     wp_unschedule_hook( $hook );
 }
+
+// ── 7. Drop Custom Dedup Table ──────────────────────────────────────────────────
+global $wpdb;
+$table_name = $wpdb->prefix . 'servertrack_dedup';
+$wpdb->query( "DROP TABLE IF EXISTS {$table_name}" );

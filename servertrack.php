@@ -68,7 +68,7 @@ function servertrack_load_classes(): void {
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-event.php';
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-dedup.php';
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-consent.php';
-    require_once SERVERTRACK_DIR . 'includes/class-servertrack-consent-v2.php';
+
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-retry.php';
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-logger.php';
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-identity.php';
@@ -299,12 +299,15 @@ add_filter( 'cron_schedules', function ( array $schedules ): array {
 // ─────────────────────────────────────────────────────────────────────────────
 register_activation_hook( __FILE__, function (): void {
     servertrack_load_classes();
+    servertrack_create_tables();
     servertrack_register_defaults();
     if ( ! wp_next_scheduled( 'servertrack_process_retry_queue' ) ) {
         wp_schedule_event( time(), 'every_five_minutes', 'servertrack_process_retry_queue' );
     }
-    if ( ! wp_next_scheduled( 'servertrack_check_abandonment' ) ) {
-        wp_schedule_event( time(), 'every_five_minutes', 'servertrack_check_abandonment' );
+    if ( get_option( 'servertrack_source_cart_abandonment_enabled', 0 ) ) {
+        if ( ! wp_next_scheduled( 'servertrack_check_abandonment' ) ) {
+            wp_schedule_event( time(), 'every_five_minutes', 'servertrack_check_abandonment' );
+        }
     }
 } );
 
