@@ -50,6 +50,8 @@ class ServerTrack_Dedup {
             return self::$hpos_enabled;
         }
 
+        self::$hpos_enabled = false;
+
         if (
             class_exists( 'Automattic\\WooCommerce\\Internal\\DataStores\\Orders\\CustomOrdersTableController' )
             && function_exists( 'wc_get_container' )
@@ -58,12 +60,18 @@ class ServerTrack_Dedup {
                 $controller = wc_get_container()->get(
                     Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController::class
                 );
-                self::$hpos_enabled = (bool) $controller->custom_orders_table_usage_is_enabled();
+                $hpos_enabled = (bool) $controller->custom_orders_table_usage_is_enabled();
+
+                if ( $hpos_enabled ) {
+                    self::$hpos_enabled = true;
+                }
             } catch ( \Exception $e ) {
-                self::$hpos_enabled = false;
+                if ( class_exists( 'ServerTrack_Logger' ) ) {
+                    ServerTrack_Logger::error(
+                        'HPOS detection failed. Defaulting to post meta. ' . $e->getMessage()
+                    );
+                }
             }
-        } else {
-            self::$hpos_enabled = false;
         }
 
         return self::$hpos_enabled;

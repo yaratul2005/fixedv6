@@ -132,9 +132,9 @@ class ServerTrack_WooRenewals {
         $subscription_id = $subscription->get_id();
 
         // Guard: skip if already sent
-        if ( ServerTrack_Dedup::was_sent( 'sub_cancel_' . $subscription_id, 'meta' )
-            || ServerTrack_Dedup::was_sent( 'sub_cancel_' . $subscription_id, 'tiktok' )
-            || ServerTrack_Dedup::was_sent( 'sub_cancel_' . $subscription_id, 'google' ) ) {
+        if ( ServerTrack_Dedup::was_sent( ServerTrack_Subscriptions::SUBSCRIPTION_CANCEL_DEDUP_KEY . $subscription_id, 'meta' )
+            || ServerTrack_Dedup::was_sent( ServerTrack_Subscriptions::SUBSCRIPTION_CANCEL_DEDUP_KEY . $subscription_id, 'tiktok' )
+            || ServerTrack_Dedup::was_sent( ServerTrack_Subscriptions::SUBSCRIPTION_CANCEL_DEDUP_KEY . $subscription_id, 'google' ) ) {
             return;
         }
 
@@ -174,7 +174,7 @@ class ServerTrack_WooRenewals {
             return;
         }
 
-        $dedup_key = 'sub_cancel_' . $subscription_id;
+        $dedup_key = ServerTrack_Subscriptions::SUBSCRIPTION_CANCEL_DEDUP_KEY . $subscription_id;
         $event_id  = ServerTrack_Dedup::get_event_id( $dedup_key );
         if ( empty( $event_id ) ) {
             $event_id = ServerTrack_Dedup::generate_event_id( $dedup_key );
