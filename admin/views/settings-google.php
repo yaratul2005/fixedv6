@@ -149,6 +149,27 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                 </td>
             </tr>
 
+            <!-- Consent Mode v2 -->
+            <tr>
+                <th scope="row"><label><?php esc_html_e( 'Consent Mode v2', 'servertrack' ); ?></label></th>
+                <td>
+                    <fieldset>
+                        <legend class="screen-reader-text"><span><?php esc_html_e( 'Consent Mode v2 defaults', 'servertrack' ); ?></span></legend>
+                        <label>
+                            <input type="checkbox" name="servertrack_google_consent_ad_user_data" value="1"
+                                <?php checked( 1, get_option( 'servertrack_google_consent_ad_user_data', 1 ) ); ?>>
+                            <?php esc_html_e( 'Grant ad_user_data by default', 'servertrack' ); ?>
+                        </label><br>
+                        <label>
+                            <input type="checkbox" name="servertrack_google_consent_ad_personalization" value="1"
+                                <?php checked( 1, get_option( 'servertrack_google_consent_ad_personalization', 1 ) ); ?>>
+                            <?php esc_html_e( 'Grant ad_personalization by default', 'servertrack' ); ?>
+                        </label>
+                        <p class="description"><?php esc_html_e( 'If the user declines consent via your CMP, these signals will dynamically be set to DENIED in the CAPI payload regardless of these defaults.', 'servertrack' ); ?></p>
+                    </fieldset>
+                </td>
+            </tr>
+
             <!-- Developer Token -->
             <tr>
                 <th scope="row"><label for="st_google_developer_token"><?php esc_html_e( 'Developer Token', 'servertrack' ); ?></label></th>

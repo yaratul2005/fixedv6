@@ -156,6 +156,13 @@ class ServerTrack_Admin {
             'servertrack_meta_pixel_id'        => [ 'type' => 'string',  'sanitize' => 'sanitize_text_field', 'default' => '' ],
             'servertrack_meta_access_token'    => [ 'type' => 'string',  'sanitize' => 'sanitize_text_field', 'default' => '' ],
             'servertrack_meta_test_event_code' => [ 'type' => 'string',  'sanitize' => 'sanitize_text_field', 'default' => '' ],
+            'servertrack_meta_am_email'   => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 1 ],
+            'servertrack_meta_am_phone'   => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 1 ],
+            'servertrack_meta_am_name'    => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 1 ],
+            'servertrack_meta_am_city'    => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 1 ],
+            'servertrack_meta_am_state'   => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 1 ],
+            'servertrack_meta_am_zip'     => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 1 ],
+            'servertrack_meta_am_country' => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 1 ],
         ];
         self::register_group( 'servertrack_meta_settings', $meta_options );
 
@@ -165,6 +172,8 @@ class ServerTrack_Admin {
             'servertrack_google_conversion_id'    => [ 'type' => 'string',  'sanitize' => 'sanitize_text_field', 'default' => '' ],
             'servertrack_google_conversion_label' => [ 'type' => 'string',  'sanitize' => 'sanitize_text_field', 'default' => '' ],
             'servertrack_google_developer_token'  => [ 'type' => 'string',  'sanitize' => 'sanitize_text_field', 'default' => '' ],
+            'servertrack_google_consent_ad_user_data' => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 1 ],
+            'servertrack_google_consent_ad_personalization' => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 1 ],
             'servertrack_google_refresh_token'    => [ 'type' => 'string',  'sanitize' => 'sanitize_text_field', 'default' => '' ],
             'servertrack_google_client_id'        => [ 'type' => 'string',  'sanitize' => 'sanitize_text_field', 'default' => '' ],
             'servertrack_google_client_secret'    => [ 'type' => 'string',  'sanitize' => 'sanitize_text_field', 'default' => '' ],
