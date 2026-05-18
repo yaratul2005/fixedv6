@@ -36,7 +36,7 @@ class ServerTrack_Dispatcher {
         ];
 
         wp_remote_post( admin_url( 'admin-post.php' ), [
-            'timeout'   => 0.01,
+            'timeout'   => 5,
             'blocking'  => false,
             'sslverify' => apply_filters( 'https_local_ssl_verify', false ),
             'body'      => $payload,

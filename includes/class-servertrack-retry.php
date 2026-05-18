@@ -115,10 +115,17 @@ class ServerTrack_Retry {
      * Called by WP-Cron every 5 minutes.
      */
     public static function process(): void {
-        $queue = get_option( self::QUEUE_OPTION, [] );
-        if ( empty( $queue ) ) {
+        $lock_key = 'servertrack_retry_processing_lock';
+        if ( get_transient( $lock_key ) ) {
             return;
         }
+        set_transient( $lock_key, true, 30 );
+
+        try {
+            $queue = get_option( self::QUEUE_OPTION, [] );
+            if ( empty( $queue ) ) {
+                return;
+            }
 
         $now     = time();
         $updated = false;
@@ -188,7 +195,10 @@ class ServerTrack_Retry {
         }
 
         if ( $updated ) {
-            update_option( self::QUEUE_OPTION, $queue, false );
+                update_option( self::QUEUE_OPTION, $queue, false );
+            }
+        } finally {
+            delete_transient( $lock_key );
         }
     }
 

@@ -231,8 +231,10 @@ function servertrack_create_tables(): void {
 
     $sql = "CREATE TABLE {$table_name} (
         dedup_key varchar(64) NOT NULL,
-        created_at datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
-        PRIMARY KEY  (dedup_key)
+        created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        expires_at datetime DEFAULT (DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 30 DAY)) NOT NULL,
+        PRIMARY KEY  (dedup_key),
+        KEY idx_expires_at (expires_at)
     ) $charset_collate;";
 
     require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
@@ -297,10 +299,20 @@ add_filter( 'cron_schedules', function ( array $schedules ): array {
 // ─────────────────────────────────────────────────────────────────────────────
 // Activation / deactivation
 // ─────────────────────────────────────────────────────────────────────────────
+add_action( 'servertrack_cleanup_dedup', function() {
+    global $wpdb;
+    $wpdb->query( "DELETE FROM {$wpdb->prefix}servertrack_dedup WHERE expires_at < NOW()" );
+});
+
 register_activation_hook( __FILE__, function (): void {
     servertrack_load_classes();
     servertrack_create_tables();
     servertrack_register_defaults();
+
+    if ( ! wp_next_scheduled( 'servertrack_cleanup_dedup' ) ) {
+        wp_schedule_event( time(), 'daily', 'servertrack_cleanup_dedup' );
+    }
+
     if ( ! wp_next_scheduled( 'servertrack_process_retry_queue' ) ) {
         wp_schedule_event( time(), 'every_five_minutes', 'servertrack_process_retry_queue' );
     }

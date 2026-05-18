@@ -52,6 +52,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *           equivalent to a cancellation/refund event.
  */
 class ServerTrack_Subscriptions {
+    const SUBSCRIPTION_CANCEL_DEDUP_KEY = 'sub_cancellation_';
 
     public static function init(): void {
         if ( ! get_option( 'servertrack_enabled', 1 ) ) return;
@@ -171,7 +172,7 @@ class ServerTrack_Subscriptions {
         if ( ! $subscription ) return;
 
         // BUG-M1 FIX: options-based string dedup.
-        $dedup_key = 'sub_cancelled_' . $sub_id;
+        $dedup_key = self::SUBSCRIPTION_CANCEL_DEDUP_KEY . $sub_id;
         $event_id  = self::get_string_event_id( $dedup_key );
         if ( empty( $event_id ) ) {
             $event_id = ServerTrack_Dedup::generate_event_id( $dedup_key );
