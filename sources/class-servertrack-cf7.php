@@ -113,9 +113,9 @@ class ServerTrack_CF7 {
         $name = $posted_data[ $name_field ] ?? '';
         if ( ! empty( $name ) ) {
             $parts = explode( ' ', trim( sanitize_text_field( $name ) ), 2 );
-            $user_data['first_name'] = ServerTrack_Hasher::hash( $parts[0] );
+            $user_data['first_name'] = ServerTrack_Hasher::hash_name( $parts[0] );
             if ( ! empty( $parts[1] ) ) {
-                $user_data['last_name'] = ServerTrack_Hasher::hash( $parts[1] );
+                $user_data['last_name'] = ServerTrack_Hasher::hash_name( $parts[1] );
             }
         }
 

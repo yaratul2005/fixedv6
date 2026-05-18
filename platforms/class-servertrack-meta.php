@@ -95,7 +95,12 @@ class ServerTrack_Meta {
         ];
         foreach ( $raw_map as $src => $dest ) {
             if ( ! empty( $event->user_data[ $src ] ) ) {
-                $ud[ $dest ] = $event->user_data[ $src ];
+                if ( $src === 'fbc' && strpos($event->user_data['fbc'], 'fb.') !== 0 ) {
+                    $ts = time() * 1000;
+                    $ud[ $dest ] = 'fb.1.' . $ts . '.' . $event->user_data['fbc'];
+                } else {
+                    $ud[ $dest ] = $event->user_data[ $src ];
+                }
             }
         }
 

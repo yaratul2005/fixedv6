@@ -82,6 +82,7 @@ function servertrack_load_classes(): void {
     // BUG-2 FIX: custom-events was present but never loaded.
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-custom-events.php';
     // Backward-compat shim — keeps ServerTrack_Core as a safe no-op class.
+    require_once SERVERTRACK_DIR . 'includes/class-servertrack-dispatcher.php';
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-core.php';
 
     if ( defined( 'WP_CLI' ) && WP_CLI ) {
@@ -92,6 +93,9 @@ function servertrack_load_classes(): void {
     require_once SERVERTRACK_DIR . 'platforms/class-servertrack-meta.php';
     require_once SERVERTRACK_DIR . 'platforms/class-servertrack-tiktok.php';
     require_once SERVERTRACK_DIR . 'platforms/class-servertrack-google.php';
+    require_once SERVERTRACK_DIR . 'platforms/class-servertrack-snapchat.php';
+    require_once SERVERTRACK_DIR . 'platforms/class-servertrack-pinterest.php';
+    require_once SERVERTRACK_DIR . 'platforms/class-servertrack-linkedin.php';
 
     // ── WooCommerce event sources ─────────────────────────────────────────────
     // Core WooCommerce purchase/refund/view events.
@@ -136,6 +140,7 @@ function servertrack_init(): void {
     servertrack_run_upgrade();
 
     // ── Core infrastructure ───────────────────────────────────────────────────
+    ServerTrack_Dispatcher::init();
     ServerTrack_Identity::init();
     ServerTrack_ClickCapture::init();
     ServerTrack_OfflineConversion::init();
@@ -214,8 +219,24 @@ function servertrack_run_upgrade(): void {
     if ( version_compare( $installed, SERVERTRACK_VERSION, '>=' ) ) {
         return; // Nothing to do.
     }
+    servertrack_create_tables();
     servertrack_register_defaults();
     update_option( 'servertrack_db_version', SERVERTRACK_VERSION );
+}
+
+function servertrack_create_tables(): void {
+    global $wpdb;
+    $charset_collate = $wpdb->get_charset_collate();
+    $table_name = $wpdb->prefix . 'servertrack_dedup';
+
+    $sql = "CREATE TABLE {$table_name} (
+        dedup_key varchar(64) NOT NULL,
+        created_at datetime DEFAULT '0000-00-00 00:00:00' NOT NULL,
+        PRIMARY KEY  (dedup_key)
+    ) $charset_collate;";
+
+    require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+    dbDelta( $sql );
 }
 
 function servertrack_register_defaults(): void {

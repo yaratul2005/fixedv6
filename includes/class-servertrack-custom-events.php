@@ -197,10 +197,10 @@ class ServerTrack_CustomEvents {
             $user_data['email'] = ServerTrack_Hasher::hash_email( $user->user_email );
         }
         if ( $user->first_name ) {
-            $user_data['first_name'] = ServerTrack_Hasher::hash( $user->first_name );
+            $user_data['first_name'] = ServerTrack_Hasher::hash_name( $user->first_name );
         }
         if ( $user->last_name ) {
-            $user_data['last_name'] = ServerTrack_Hasher::hash( $user->last_name );
+            $user_data['last_name'] = ServerTrack_Hasher::hash_name( $user->last_name );
         }
 
         $event->set_user_data( $user_data );
