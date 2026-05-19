@@ -355,6 +355,14 @@ class ServerTrack_Frontend {
              $session_key .= session_id() ?: uniqid();
         }
 
+        // Append a unique ID per page load so that events on different pages/reloads get unique IDs
+        // and aren't improperly deduplicated against previous page views by the same user.
+        global $servertrack_page_load_id;
+        if ( empty( $servertrack_page_load_id ) ) {
+            $servertrack_page_load_id = wp_generate_uuid4();
+        }
+        $session_key .= '_' . $servertrack_page_load_id;
+
         $config['event_ids'] = [
             'PageView' => ServerTrack_Hasher::event_id('PageView', $session_key),
             'ViewContent' => ServerTrack_Hasher::event_id('ViewContent', $session_key),

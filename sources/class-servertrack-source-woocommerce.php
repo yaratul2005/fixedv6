@@ -314,7 +314,11 @@ class ServerTrack_Source_WooCommerce {
         if ( ! $order ) return;
         $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ];
         $custom_data = ServerTrack_Catalog::from_order_summary( $order );
-        $event_id    = ServerTrack_Hasher::event_id( 'ViewContent', $order_id );
+        global $servertrack_page_load_id;
+        if ( empty( $servertrack_page_load_id ) ) {
+            $servertrack_page_load_id = wp_generate_uuid4();
+        }
+        $event_id    = ServerTrack_Hasher::event_id( 'ViewContent', $order_id . '_' . $servertrack_page_load_id );
         $event       = ( new ServerTrack_Event( 'ViewContent', $event_id ) )
             ->set_user_data( $user_data )
             ->set_custom_data( $custom_data );
@@ -346,7 +350,7 @@ class ServerTrack_Source_WooCommerce {
             'currency'     => get_woocommerce_currency(),
             'num_items'    => $quantity,
         ];
-        $event_id = ServerTrack_Hasher::event_id( 'AddToCart', $cart_item_key );
+        $event_id = ServerTrack_Hasher::event_id( 'AddToCart', $cart_item_key . '_' . wp_generate_uuid4() );
         $event    = ( new ServerTrack_Event( 'AddToCart', $event_id ) )
             ->set_user_data( $user_data )
             ->set_custom_data( $custom_data );
@@ -368,6 +372,12 @@ class ServerTrack_Source_WooCommerce {
         if ( ! WC()->cart || WC()->cart->is_empty() ) return;
         $user_id     = get_current_user_id();
         $session_key = $user_id . '_' . ( WC()->session ? WC()->session->get_customer_id() : 'guest' );
+        global $servertrack_page_load_id;
+        if ( empty( $servertrack_page_load_id ) ) {
+            $servertrack_page_load_id = wp_generate_uuid4();
+        }
+        $session_key .= '_' . $servertrack_page_load_id;
+
         $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_user( get_current_user_id() ) ];
         $custom_data = ServerTrack_Catalog::from_cart();
         $event_id    = ServerTrack_Hasher::event_id( 'InitiateCheckout', $session_key );
@@ -382,7 +392,11 @@ class ServerTrack_Source_WooCommerce {
         if ( ! $order ) return;
         $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ];
         $custom_data = ServerTrack_Catalog::from_order_summary( $order );
-        $event_id    = ServerTrack_Hasher::event_id( 'AddPaymentInfo', $order_id );
+        global $servertrack_page_load_id;
+        if ( empty( $servertrack_page_load_id ) ) {
+            $servertrack_page_load_id = wp_generate_uuid4();
+        }
+        $event_id    = ServerTrack_Hasher::event_id( 'AddPaymentInfo', $order_id . '_' . $servertrack_page_load_id );
         $event       = ( new ServerTrack_Event( 'AddPaymentInfo', $event_id ) )
             ->set_user_data( $user_data )
             ->set_custom_data( $custom_data );

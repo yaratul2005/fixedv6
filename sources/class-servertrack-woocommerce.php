@@ -358,7 +358,11 @@ class ServerTrack_WooCommerce {
         if ( $order->get_meta( '_servertrack_api_sent' ) ) return;
         $order->update_meta_data( '_servertrack_api_sent', '1' );
         $order->save_meta_data();
-        $event = ( new ServerTrack_Event( 'AddPaymentInfo', ServerTrack_Dedup::generate_event_id( 'api_' . $order_id ) ) )
+        global $servertrack_page_load_id;
+        if ( empty( $servertrack_page_load_id ) ) {
+            $servertrack_page_load_id = wp_generate_uuid4();
+        }
+        $event = ( new ServerTrack_Event( 'AddPaymentInfo', ServerTrack_Dedup::generate_event_id( 'api_' . $order_id . '_' . $servertrack_page_load_id ) ) )
             ->set_user_data( self::build_order_user_data( $order ) )
             ->set_custom_data( [ 'currency' => $order->get_currency(), 'value' => (float) $order->get_total(), 'content_type' => 'product' ] );
         // H-1 + BUG-A FIX: pass order_id so consent uses per-order snapshot; also now logs

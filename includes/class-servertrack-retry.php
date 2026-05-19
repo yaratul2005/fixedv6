@@ -176,7 +176,7 @@ class ServerTrack_Retry {
 
                 if ( '' !== $dedup_key ) {
                     // Non-order event: use the options-based string-key dedup API.
-                    ServerTrack_Dedup::set( $dedup_key );
+                    ServerTrack_Dedup::mark_as_sent( $dedup_key, "meta" );
                 } elseif ( $order_id > 0 ) {
                     // Standard WooCommerce order: use the order-meta dedup API.
                     ServerTrack_Dedup::mark_as_sent( $order_id, $platform );

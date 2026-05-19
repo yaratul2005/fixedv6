@@ -136,7 +136,7 @@
         jQuery(document.body).on('added_to_cart', function(e, fragments, cart_hash, $btn) {
             const productId = $btn.data('product_id');
             const price     = $btn.data('price') || 0;
-            const eventId   = ST_Data.event_ids.AddToCart || crypto.randomUUID();
+            const eventId   = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : 'atc_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
 
             const params = {
                 content_ids: [productId ? productId.toString() : ''],
