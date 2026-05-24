@@ -66,11 +66,11 @@ class ServerTrack_Dedup {
                     self::$hpos_enabled = true;
                 }
             } catch ( \Exception $e ) {
+                error_log( 'ServerTrack: HPOS detection failed - ' . $e->getMessage() );
                 if ( class_exists( 'ServerTrack_Logger' ) ) {
-                    ServerTrack_Logger::error(
-                        'HPOS detection failed. Defaulting to post meta. ' . $e->getMessage()
-                    );
+                    ServerTrack_Logger::error( 'HPOS detection failed', [ 'exception' => $e->getMessage() ] );
                 }
+                self::$hpos_enabled = false;
             }
         }
 
@@ -152,7 +152,7 @@ class ServerTrack_Dedup {
             return wp_generate_uuid4();
         }
 
-        $hash  = hash( 'sha256', $context_string . '_' . SECURE_AUTH_KEY, true );
+        $hash  = hash_hmac( 'sha256', $context_string, SECURE_AUTH_KEY, true );
         $bytes = substr( $hash, 0, 16 );
 
         $bytes[6] = chr( ( ord( $bytes[6] ) & 0x0f ) | 0x40 );

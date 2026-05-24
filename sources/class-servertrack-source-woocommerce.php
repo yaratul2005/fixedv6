@@ -97,6 +97,7 @@ class ServerTrack_Source_WooCommerce {
         add_action( 'woocommerce_order_status_processing',  [ self::class, 'handle_purchase' ],              10, 1 );
         add_action( 'woocommerce_add_to_cart',              [ self::class, 'handle_add_to_cart' ],           10, 6 );
         add_action( 'woocommerce_before_checkout_form',     [ self::class, 'handle_initiate_checkout' ],     10    );
+        add_action( 'wp', [ 'ServerTrack_Consent', 'capture_snapshot' ] );
         add_action( 'woocommerce_checkout_order_processed', [ 'ServerTrack_Consent', 'capture_for_order' ],  9, 1 );
         add_action( 'woocommerce_checkout_order_processed', [ self::class, 'handle_add_payment_info' ],      10, 1 );
         add_action( 'woocommerce_created_customer',         [ self::class, 'handle_complete_registration' ], 10, 1 );
@@ -301,7 +302,7 @@ class ServerTrack_Source_WooCommerce {
             return;
         }
         $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ];
-        $custom_data = ServerTrack_Catalog::from_order( $order );
+        $custom_data = ServerTrack_Catalog::from_order( $order ) ?: [];
         $event_id    = ServerTrack_Hasher::event_id( 'Purchase', $order_id );
         $event       = ( new ServerTrack_Event( 'Purchase', $event_id ) )
             ->set_user_data( $user_data )
@@ -313,7 +314,7 @@ class ServerTrack_Source_WooCommerce {
         $order = wc_get_order( $order_id );
         if ( ! $order ) return;
         $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ];
-        $custom_data = ServerTrack_Catalog::from_order_summary( $order );
+        $custom_data = ServerTrack_Catalog::from_order_summary( $order ) ?: [];
         global $servertrack_page_load_id;
         if ( empty( $servertrack_page_load_id ) ) {
             $servertrack_page_load_id = wp_generate_uuid4();
@@ -391,7 +392,7 @@ class ServerTrack_Source_WooCommerce {
         $order = wc_get_order( $order_id );
         if ( ! $order ) return;
         $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ];
-        $custom_data = ServerTrack_Catalog::from_order_summary( $order );
+        $custom_data = ServerTrack_Catalog::from_order_summary( $order ) ?: [];
         global $servertrack_page_load_id;
         if ( empty( $servertrack_page_load_id ) ) {
             $servertrack_page_load_id = wp_generate_uuid4();

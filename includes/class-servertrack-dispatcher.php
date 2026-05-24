@@ -35,12 +35,19 @@ class ServerTrack_Dispatcher {
             'nonce'     => wp_create_nonce( self::ACTION_NAME ),
         ];
 
-        wp_remote_post( admin_url( 'admin-post.php' ), [
+        $response = wp_remote_post( admin_url( 'admin-post.php' ), [
             'timeout'   => 5,
             'blocking'  => false,
             'sslverify' => apply_filters( 'https_local_ssl_verify', false ),
             'body'      => $payload,
         ] );
+
+        if ( is_wp_error( $response ) ) {
+            ServerTrack_Logger::warning(
+                'Async dispatch loopback failed. Events will retry via WP-Cron if configured.',
+                [ 'error' => $response->get_error_message(), 'payload_action' => $payload['action'] ]
+            );
+        }
     }
 
     /**

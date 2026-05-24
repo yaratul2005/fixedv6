@@ -117,6 +117,12 @@ class ServerTrack_Dedup {
     public static function mark_as_sent( $key, string $platform ): void {
         self::$sent[ "{$key}:{$platform}" ] = true;
     }
+    public static function mark_string_sent( $key, string $platform ): void {
+        self::$sent[ "{$key}:{$platform}" ] = true;
+    }
+    public static function mark_sent( $key, string $platform ): void {
+        self::$sent[ "{$key}:{$platform}" ] = true;
+    }
 
     public static function reset(): void { self::$sent = []; }
 }
