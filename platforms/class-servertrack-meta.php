@@ -58,10 +58,21 @@ class ServerTrack_Meta {
             return [ 'status' => 'skipped', 'http_code' => 0 ];
         }
 
-        $pixel_id     = trim( (string) get_option( 'servertrack_meta_pixel_id', '' ) );
-        $access_token = trim( (string) get_option( 'servertrack_meta_access_token', '' ) );
+        $pixels_json = get_option( 'servertrack_meta_pixels_array', '' );
+        $pixels = [];
+        if ( ! empty( $pixels_json ) ) {
+            $pixels = json_decode( $pixels_json, true );
+        }
 
-        if ( '' === $pixel_id || '' === $access_token ) {
+        if ( empty( $pixels ) ) {
+            $pixel_id     = trim( (string) get_option( 'servertrack_meta_pixel_id', '' ) );
+            $access_token = trim( (string) get_option( 'servertrack_meta_access_token', '' ) );
+            if ( '' !== $pixel_id && '' !== $access_token ) {
+                $pixels[] = [ 'pixel_id' => $pixel_id, 'token' => $access_token ];
+            }
+        }
+
+        if ( empty( $pixels ) ) {
             return [
                 'status'  => 'error',
                 'message' => 'Meta Pixel ID or Access Token not configured. Please save your credentials in the Meta CAPI tab first.',

@@ -67,7 +67,14 @@ function servertrack_load_classes(): void {
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-hasher.php';
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-event.php';
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-dedup.php';
+    require_once SERVERTRACK_DIR . 'includes/class-servertrack-dedup-engine.php';
+    require_once SERVERTRACK_DIR . 'includes/class-servertrack-enrichment.php';
+    require_once SERVERTRACK_DIR . 'includes/class-servertrack-health.php';
+    require_once SERVERTRACK_DIR . 'includes/class-servertrack-stream.php';
+    require_once SERVERTRACK_DIR . 'includes/class-servertrack-attribution.php';
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-consent.php';
+    require_once SERVERTRACK_DIR . 'includes/class-servertrack-cookiehelper.php';
+    require_once SERVERTRACK_DIR . 'includes/class-servertrack-proxy.php';
 
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-retry.php';
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-logger.php';
@@ -141,10 +148,17 @@ function servertrack_init(): void {
 
     // ── Core infrastructure ───────────────────────────────────────────────────
     ServerTrack_Dispatcher::init();
+    ServerTrack_CookieHelper::init();
+    ServerTrack_Proxy::init();
     ServerTrack_Identity::init();
     ServerTrack_ClickCapture::init();
     ServerTrack_OfflineConversion::init();
     ServerTrack_PixelDedup::init();
+    ServerTrack_DedupEngine::init();
+    ServerTrack_Enrichment::init();
+    ServerTrack_Health::init();
+    ServerTrack_Stream::init();
+    ServerTrack_Attribution::init();
     ServerTrack_LTV::init();
     ServerTrack_Catalog::init();
     ServerTrack_Webhook::init();

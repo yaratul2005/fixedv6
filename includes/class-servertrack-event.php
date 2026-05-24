@@ -65,7 +65,7 @@ class ServerTrack_Event {
 
     /** @return static Fluent setter. */
     public function set_custom_data( array $custom_data ): static {
-        $this->custom_data = $custom_data;
+        $this->custom_data = apply_filters( 'servertrack_event_custom_data', $custom_data, $this );
         return $this;
     }
 
