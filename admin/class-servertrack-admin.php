@@ -379,7 +379,14 @@ class ServerTrack_Admin {
         if ( ! current_user_can( 'manage_options' ) ) return;
 
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'general';
+
+        if ( 'servertrack-sources' === $page ) {
+            $tab = 'sources';
+        }
+
         if ( ! array_key_exists( $tab, self::TAB_GROUPS ) ) {
             $tab = 'general';
         }
