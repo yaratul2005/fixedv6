@@ -103,7 +103,7 @@ class ServerTrack_Dashboard {
 
         add_submenu_page( 'servertrack', __( 'Dashboard', 'servertrack' ), __( 'Dashboard', 'servertrack' ), 'manage_options', 'servertrack',          [ self::class, 'render_page' ] );
         add_submenu_page( 'servertrack', __( 'Settings',  'servertrack' ), __( 'Settings',  'servertrack' ), 'manage_options', 'servertrack-settings', [ 'ServerTrack_Admin', 'render_page' ] );
-        add_submenu_page( 'servertrack', __( 'Event Sources', 'servertrack' ), __( 'Event Sources', 'servertrack' ), 'manage_options', 'servertrack-sources', [ 'ServerTrack_Admin', 'render_page' ] );
+
     }
 
     public static function enqueue_assets( string $hook ): void {
