@@ -65,6 +65,7 @@ class ServerTrack_Admin {
         'google'  => 'servertrack_google_settings',
         'tiktok'  => 'servertrack_tiktok_settings',
         'sources' => 'servertrack_sources_settings',
+        'license' => 'servertrack_license_settings',
     ];
 
     private static function settings_url( string $tab = '', array $extra = [] ): string {
@@ -79,6 +80,7 @@ class ServerTrack_Admin {
         add_action( 'admin_init',            [ self::class, 'register_settings' ] );
         add_action( 'admin_init',            [ self::class, 'handle_oauth_callback' ] );
         add_action( 'admin_init',            [ self::class, 'handle_oauth_revoke' ] );
+        add_action( 'admin_init',            [ self::class, 'handle_license_actions' ] );
         add_action( 'admin_enqueue_scripts', [ self::class, 'enqueue_assets' ] );
         add_action( 'admin_notices',         [ self::class, 'render_health_notice' ] );
         add_action( 'wp_ajax_servertrack_test_event',          [ self::class, 'ajax_test_event' ] );
@@ -197,6 +199,11 @@ class ServerTrack_Admin {
          * C7  — servertrack_source_subscriptions_enabled was already here;
          *       a UI toggle has been added to the Sources view.
          */
+        $license_options = [
+            'servertrack_license_key' => [ 'type' => 'string', 'sanitize' => 'sanitize_text_field', 'default' => '' ],
+        ];
+        self::register_group( 'servertrack_license_settings', $license_options );
+
         $sources_options = [
             'servertrack_source_woo_enabled'              => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 1  ],
             'servertrack_source_cart_abandonment_enabled' => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 0  ],
@@ -248,6 +255,23 @@ class ServerTrack_Admin {
         }
         wp_safe_redirect( self::settings_url( $tab, $extra ) );
         exit;
+    }
+
+        public static function handle_license_actions(): void {
+        if ( ! current_user_can( 'manage_options' ) ) return;
+
+        if ( isset( $_POST['st_license_action'] ) && isset( $_POST['servertrack_license_key'] ) ) {
+            $action = sanitize_text_field( wp_unslash( $_POST['st_license_action'] ) );
+            $key = sanitize_text_field( wp_unslash( $_POST['servertrack_license_key'] ) );
+
+            if ( 'activate' === $action ) {
+                $result = ServerTrack_License::activate( $key );
+                add_settings_error( 'servertrack_license_messages', 'st_license', $result['message'], $result['success'] ? 'success' : 'error' );
+            } elseif ( 'deactivate' === $action ) {
+                $result = ServerTrack_License::deactivate();
+                add_settings_error( 'servertrack_license_messages', 'st_license', $result['message'], $result['success'] ? 'success' : 'error' );
+            }
+        }
     }
 
     public static function handle_oauth_revoke(): void {
@@ -402,6 +426,7 @@ class ServerTrack_Admin {
                 'google'  => __( 'Google Ads', 'servertrack' ),
                 'tiktok'  => __( 'TikTok', 'servertrack' ),
                 'sources' => __( 'Event Sources', 'servertrack' ),
+                'license' => __( 'License', 'servertrack' ),
             ];
             foreach ( $tabs as $slug => $label ) :
                 $url     = esc_url( self::settings_url( $slug ) );

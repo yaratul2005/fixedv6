@@ -72,6 +72,7 @@ function servertrack_load_classes(): void {
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-health.php';
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-stream.php';
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-attribution.php';
+    require_once SERVERTRACK_DIR . 'includes/class-servertrack-license.php';
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-consent.php';
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-cookiehelper.php';
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-proxy.php';
@@ -159,6 +160,7 @@ function servertrack_init(): void {
     ServerTrack_Health::init();
     ServerTrack_Stream::init();
     ServerTrack_Attribution::init();
+    ServerTrack_License::init();
     ServerTrack_LTV::init();
     ServerTrack_Catalog::init();
     ServerTrack_Webhook::init();
