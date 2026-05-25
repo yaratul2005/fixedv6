@@ -1899,3 +1899,54 @@
 @keyframes fadeInRow {
     to { opacity: 1; transform: none; }
 }
+
+
+/* Overall Container Animation */
+.wrap {
+    animation: fadeInWrap 0.4s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+}
+
+@keyframes fadeInWrap {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Stagger Settings Sections */
+.st-settings-section {
+    animation: slideUpSection 0.5s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+    opacity: 0;
+}
+.st-settings-section:nth-child(1) { animation-delay: 0.1s; }
+.st-settings-section:nth-child(2) { animation-delay: 0.2s; }
+.st-settings-section:nth-child(3) { animation-delay: 0.3s; }
+.st-settings-section:nth-child(4) { animation-delay: 0.4s; }
+
+@keyframes slideUpSection {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Improve header logo/styling */
+.st-page-header {
+    border-radius: var(--st-radius-lg);
+    margin-bottom: 25px;
+    padding: 20px 25px;
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    color: white;
+}
+
+.st-page-title-group h1 {
+    color: white !important;
+}
+
+.st-page-title-group p {
+    color: rgba(255,255,255,0.7) !important;
+}
+
+/* Modern Toggles */
+.st-toggle-slider {
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+}
+.st-toggle-slider::before {
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
