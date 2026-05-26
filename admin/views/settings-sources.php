@@ -28,6 +28,25 @@ if ( ! defined( 'ABSPATH' ) ) exit;
         </td>
     </tr>
 
+    <!-- Manual Purchase Verification -->
+    <tr style="background:#f0f8ff;">
+        <th scope="row">
+            <?php esc_html_e( 'Manual Purchase Verification', 'servertrack' ); ?>
+        </th>
+        <td>
+            <label class="st-toggle">
+                <input type="checkbox" name="servertrack_manual_purchase_enabled" value="1"
+                    <?php checked( 1, get_option( 'servertrack_manual_purchase_enabled', 0 ) ); ?> />
+                <span class="st-toggle-slider"></span>
+            </label>
+            <span class="st-toggle-label"><?php esc_html_e( 'Enable manual Purchase event firing', 'servertrack' ); ?></span>
+
+            <p class="description">
+                <?php esc_html_e( 'When enabled, automatic Purchase events on the Thank You page are disabled. You must manually fire the Purchase event from the WooCommerce Orders page after verifying the order is legitimate.', 'servertrack' ); ?>
+            </p>
+        </td>
+    </tr>
+
     <!-- Cart Abandonment (C3: key corrected to _cart_abandonment_enabled) -->
     <tr>
         <th scope="row"><?php esc_html_e( 'Cart Abandonment', 'servertrack' ); ?></th>

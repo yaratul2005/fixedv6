@@ -293,6 +293,40 @@ class ServerTrack_Source_WooCommerce {
     // EXISTING HANDLERS (v3.0 – v3.2, with BUG-11 and BUG-12 fixes)
     // ══════════════════════════════════════════════════════════════════════
 
+        /**
+     * Manually fires a Purchase event for a given order, bypassing automatic suppressions.
+     */
+    public static function fire_manual_purchase( int $order_id ): array {
+        $order = wc_get_order( $order_id );
+        if ( ! $order ) {
+            return [ 'success' => false, 'message' => 'Invalid order.' ];
+        }
+
+        // Use a unique suffix for manual events so it doesn't get blocked by standard dedup if it was somehow triggered
+        $event_id    = ServerTrack_Hasher::event_id( 'Purchase', $order_id . '_manual' );
+
+        if ( ServerTrack_Dedup::already_sent( $event_id, 'meta' )
+          && ServerTrack_Dedup::already_sent( $event_id, 'tiktok' )
+          && ServerTrack_Dedup::already_sent( $event_id, 'google' ) ) {
+            return [ 'success' => false, 'message' => 'Manual Purchase event has already been sent.' ];
+        }
+
+        $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ];
+        $custom_data = ServerTrack_Catalog::from_order( $order ) ?: [];
+
+        $event       = ( new ServerTrack_Event( 'Purchase', $event_id ) )
+            ->set_user_data( $user_data )
+            ->set_custom_data( $custom_data );
+
+        ServerTrack_Core::dispatch_to_all( $event, $event_id );
+
+        // Mark the order so we know it was manually verified and sent
+        $order->update_meta_data( '_servertrack_manual_purchase_sent', 'yes' );
+        $order->save();
+
+        return [ 'success' => true, 'message' => 'Manual Purchase event dispatched successfully.' ];
+    }
+
     public static function handle_purchase( int $order_id ): void {
         $order = wc_get_order( $order_id );
         if ( ! $order ) return;

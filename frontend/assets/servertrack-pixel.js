@@ -86,6 +86,18 @@
         }
 
         // Additional ViewContent for Products
+                if (ST_Data.event_name === 'Purchase' && !ST_Data.is_manual_purchase) {
+            const purchaseParams = {
+                content_ids: ST_Data.content_ids,
+                content_type: 'product',
+                value: ST_Data.value,
+                currency: ST_Data.currency
+            };
+            if (ST_Data.meta_pixel) fbq('track', 'Purchase', purchaseParams, { eventID: ST_Data.event_id });
+            if (ST_Data.tiktok_pixel && typeof ttq !== 'undefined') ttq.track('PlaceAnOrder', purchaseParams, { event_id: ST_Data.event_id });
+        }
+
+        // Additional ViewContent for Products
         if (ST_Data.is_product) {
             const productParams = {
                 content_ids: ST_Data.content_ids,
