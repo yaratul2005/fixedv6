@@ -104,7 +104,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                 <li><?php esc_html_e( 'Create an OAuth 2.0 Client ID of type "Web application".', 'servertrack' ); ?></li>
                 <li><?php esc_html_e( 'Under "Authorised redirect URIs", add the following URI exactly:', 'servertrack' ); ?>
                     <code class="st-copy-uri"><?php echo esc_url( admin_url( 'options-general.php?page=servertrack&tab=google' ) ); ?></code>
-                    <button type="button" class="button-link st-copy-btn" data-target=".st-copy-uri"><?php esc_html_e( 'Copy', 'servertrack' ); ?></button>
+                    <button type="button" class="button-link st-copy-btn" data-target=".st-copy-uri" aria-label="Copy Google OAuth Redirect URI"><?php esc_html_e( 'Copy', 'servertrack' ); ?></button>
                 </li>
                 <li><?php esc_html_e( 'Enable the Google Ads API in the Cloud Console.', 'servertrack' ); ?></li>
                 <li><?php esc_html_e( 'Paste your Client ID and Client Secret into the fields below, save, then click "Connect with Google".', 'servertrack' ); ?></li>

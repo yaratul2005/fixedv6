@@ -102,7 +102,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 <hr />
 <h2><?php esc_html_e( 'Send Test Event', 'servertrack' ); ?></h2>
 <p><?php esc_html_e( 'Sends a dummy Purchase event to Meta CAPI to verify your credentials.', 'servertrack' ); ?></p>
-<button type="button" class="button button-secondary servertrack-test-btn" data-platform="meta">
+<button type="button" class="button button-secondary servertrack-test-btn" data-platform="meta" aria-label="Send test event to Meta">
     <?php esc_html_e( 'Send Test Event → Meta', 'servertrack' ); ?>
 </button>
-<div class="servertrack-test-response" id="servertrack-test-response-meta"></div>
+<div class="servertrack-test-response" id="servertrack-test-response-meta" aria-live="polite"></div>

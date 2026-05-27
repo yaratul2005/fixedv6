@@ -1,0 +1,3 @@
+## 2026-05-27 - Adding aria-live to AJAX response containers
+**Learning:** For async dashboard tools like 'Send Test Event', screen readers often fail to announce the success/error messages injected into the DOM after the button is clicked because the focus remains on the button and the content changes dynamically elsewhere. Adding `aria-live="polite"` to empty result containers ensures that when a test result is injected via AJAX, the screen reader naturally reads it to the user.
+**Action:** When adding test buttons or any interactive element that triggers an AJAX update, always attach `aria-live="polite"` to the container where the response will be rendered.

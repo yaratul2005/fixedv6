@@ -116,11 +116,11 @@ $st_tiktok_configured = get_option( 'servertrack_tiktok_enabled', 0 )
                         <div class="st-platform-stat-key"><?php esc_html_e( 'Token', 'servertrack' ); ?></div>
                     </div>
                 </div>
-                <button type="button" class="st-test-btn" data-platform="meta">
+                <button type="button" class="st-test-btn" data-platform="meta" aria-label="Send test event to Meta">
                     <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                     <?php esc_html_e( 'Send Test → Meta', 'servertrack' ); ?>
                 </button>
-                <div class="st-test-result" id="st-test-result-meta"></div>
+                <div class="st-test-result" id="st-test-result-meta" aria-live="polite"></div>
             </div>
 
             <!-- Google Ads -->
@@ -150,11 +150,11 @@ $st_tiktok_configured = get_option( 'servertrack_tiktok_enabled', 0 )
                         <div class="st-platform-stat-key"><?php esc_html_e( 'OAuth', 'servertrack' ); ?></div>
                     </div>
                 </div>
-                <button type="button" class="st-test-btn" data-platform="google">
+                <button type="button" class="st-test-btn" data-platform="google" aria-label="Send test event to Google">
                     <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                     <?php esc_html_e( 'Send Test → Google', 'servertrack' ); ?>
                 </button>
-                <div class="st-test-result" id="st-test-result-google"></div>
+                <div class="st-test-result" id="st-test-result-google" aria-live="polite"></div>
             </div>
 
             <!-- TikTok -->
@@ -184,11 +184,11 @@ $st_tiktok_configured = get_option( 'servertrack_tiktok_enabled', 0 )
                         <div class="st-platform-stat-key"><?php esc_html_e( 'Token', 'servertrack' ); ?></div>
                     </div>
                 </div>
-                <button type="button" class="st-test-btn" data-platform="tiktok">
+                <button type="button" class="st-test-btn" data-platform="tiktok" aria-label="Send test event to TikTok">
                     <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                     <?php esc_html_e( 'Send Test → TikTok', 'servertrack' ); ?>
                 </button>
-                <div class="st-test-result" id="st-test-result-tiktok"></div>
+                <div class="st-test-result" id="st-test-result-tiktok" aria-live="polite"></div>
             </div>
 
         </div><!-- /.st-platform-grid -->
@@ -200,7 +200,7 @@ $st_tiktok_configured = get_option( 'servertrack_tiktok_enabled', 0 )
             <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
             <?php esc_html_e( 'Recent Events', 'servertrack' ); ?>
         </h3>
-        <ul class="st-activity-feed" id="st-activity-feed">
+        <ul class="st-activity-feed" id="st-activity-feed" aria-live="polite">
             <li class="st-loading-screen">
                 <div class="st-spinner"></div>
                 <div class="st-loading-text"><?php esc_html_e( 'Loading…', 'servertrack' ); ?></div>

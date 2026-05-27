@@ -45,7 +45,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 <hr />
 <h2><?php esc_html_e( 'Send Test Event', 'servertrack' ); ?></h2>
 <p><?php esc_html_e( 'Sends a dummy Purchase event to TikTok Events API to verify your credentials.', 'servertrack' ); ?></p>
-<button type="button" class="button button-secondary servertrack-test-btn" data-platform="tiktok">
+<button type="button" class="button button-secondary servertrack-test-btn" data-platform="tiktok" aria-label="Send test event to TikTok">
     <?php esc_html_e( 'Send Test Event → TikTok', 'servertrack' ); ?>
 </button>
-<div class="servertrack-test-response" id="servertrack-test-response-tiktok"></div>
+<div class="servertrack-test-response" id="servertrack-test-response-tiktok" aria-live="polite"></div>

@@ -20,22 +20,22 @@ $servertrack_logs = get_option( 'servertrack_debug_log', [] );
         <?php esc_html_e( 'Fire a live Purchase test event to confirm API connectivity for each platform.', 'servertrack' ); ?>
     </p>
     <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <button type="button" class="st-test-btn" data-platform="meta" style="flex:1;min-width:160px">
+        <button type="button" class="st-test-btn" data-platform="meta" style="flex:1;min-width:160px" aria-label="Send test event to Meta">
             <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             <?php esc_html_e( 'Send Test → Meta', 'servertrack' ); ?>
         </button>
-        <button type="button" class="st-test-btn" data-platform="google" style="flex:1;min-width:160px">
+        <button type="button" class="st-test-btn" data-platform="google" style="flex:1;min-width:160px" aria-label="Send test event to Google">
             <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             <?php esc_html_e( 'Send Test → Google', 'servertrack' ); ?>
         </button>
-        <button type="button" class="st-test-btn" data-platform="tiktok" style="flex:1;min-width:160px">
+        <button type="button" class="st-test-btn" data-platform="tiktok" style="flex:1;min-width:160px" aria-label="Send test event to TikTok">
             <svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             <?php esc_html_e( 'Send Test → TikTok', 'servertrack' ); ?>
         </button>
     </div>
-    <div class="st-test-result" id="st-test-result-meta"   style="margin-top:10px"></div>
-    <div class="st-test-result" id="st-test-result-google" style="margin-top:10px"></div>
-    <div class="st-test-result" id="st-test-result-tiktok" style="margin-top:10px"></div>
+    <div class="st-test-result" id="st-test-result-meta" style="margin-top:10px" aria-live="polite"></div>
+    <div class="st-test-result" id="st-test-result-google" style="margin-top:10px" aria-live="polite"></div>
+    <div class="st-test-result" id="st-test-result-tiktok" style="margin-top:10px" aria-live="polite"></div>
 </div>
 
 <!-- Log Table -->
@@ -50,11 +50,11 @@ $servertrack_logs = get_option( 'servertrack_debug_log', [] );
             </span>
         </h2>
         <div class="st-log-actions">
-            <button type="button" class="st-btn" id="servertrack-refresh-log">
+            <button type="button" class="st-btn" id="servertrack-refresh-log" aria-label="Refresh event log">
                 <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
                 <?php esc_html_e( 'Refresh', 'servertrack' ); ?>
             </button>
-            <button type="button" class="st-btn st-btn-danger" id="servertrack-clear-log">
+            <button type="button" class="st-btn st-btn-danger" id="servertrack-clear-log" aria-label="Clear event log">
                 <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
                 <?php esc_html_e( 'Clear Log', 'servertrack' ); ?>
             </button>
