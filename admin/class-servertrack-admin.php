@@ -529,18 +529,21 @@ class ServerTrack_Admin {
         <nav class="st-tab-nav">
             <?php
             $tabs = [
-                'general' => __( 'General', 'servertrack' ),
-                'meta'    => __( 'Meta CAPI', 'servertrack' ),
-                'google'  => __( 'Google Ads', 'servertrack' ),
-                'tiktok'  => __( 'TikTok', 'servertrack' ),
-                'sources' => __( 'Event Sources', 'servertrack' ),
-                'license' => __( 'License', 'servertrack' ),
+                'general' => [ 'label' => __( 'General', 'servertrack' ), 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>' ],
+                'meta'    => [ 'label' => __( 'Meta CAPI', 'servertrack' ), 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.879V14.89h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.989C18.343 21.129 22 16.99 22 12c0-5.523-4.477-10-10-10z"/></svg>' ],
+                'google'  => [ 'label' => __( 'Google Ads', 'servertrack' ), 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M21.35 11.1H12.18V13.83H18.69C18.36 17.64 15.19 19.27 12.19 19.27C8.36 19.27 5 16.25 5 12C5 7.9 8.2 4.73 12.2 4.73C15.29 4.73 17.1 6.7 17.1 6.7L19 4.72C19 4.72 16.56 2 12.1 2C6.42 2 2.03 6.8 2.03 12C2.03 17.05 6.16 22 12.25 22C17.6 22 21.5 18.33 21.5 12.91C21.5 11.76 21.35 11.1 21.35 11.1Z"/></svg>' ],
+                'tiktok'  => [ 'label' => __( 'TikTok', 'servertrack' ), 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.321 5.562a5.124 5.124 0 0 1-.443-.258 6.228 6.228 0 0 1-1.137-.966c-.849-.971-1.166-1.956-1.282-2.645h.004C16.368 1.2 16.4 1 16.4 1h-3.797v14.4c0 .193 0 .384-.008.573-.008.203-.018.4-.038.586a3.04 3.04 0 0 1-.303 1.067 3.065 3.065 0 0 1-2.742 1.693 3.072 3.072 0 0 1-3.072-3.072 3.072 3.072 0 0 1 3.072-3.072c.3 0 .588.044.862.123V9.386a6.896 6.896 0 0 0-.862-.055 6.868 6.868 0 0 0-6.868 6.868A6.868 6.868 0 0 0 10.512 23a6.868 6.868 0 0 0 6.868-6.868V8.545a9.984 9.984 0 0 0 5.82 1.868V6.636a6.242 6.242 0 0 1-3.879-1.074z"/></svg>' ],
+                'sources' => [ 'label' => __( 'Event Sources', 'servertrack' ), 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>' ],
+                'license' => [ 'label' => __( 'License', 'servertrack' ), 'icon' => '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>' ],
             ];
-            foreach ( $tabs as $slug => $label ) :
+            foreach ( $tabs as $slug => $data ) :
                 $url     = esc_url( self::settings_url( $slug ) );
                 $classes = 'nav-tab' . ( $tab === $slug ? ' nav-tab-active' : '' );
             ?>
-            <a href="<?php echo $url; ?>" class="<?php echo esc_attr( $classes ); ?>"><?php echo esc_html( $label ); ?></a>
+            <a href="<?php echo $url; ?>" class="<?php echo esc_attr( $classes ); ?>" style="display:inline-flex;align-items:center;gap:6px;">
+                <?php echo $data['icon']; // phpcs:ignore ?>
+                <?php echo esc_html( $data['label'] ); ?>
+            </a>
             <?php endforeach; ?>
         </nav>
 

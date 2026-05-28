@@ -9,21 +9,27 @@ if ( ! defined( 'ABSPATH' ) ) exit;
     <tr>
         <th scope="row"><?php esc_html_e( 'Enable Plugin', 'servertrack' ); ?></th>
         <td>
-            <label>
+            <label class="st-toggle">
                 <input type="checkbox" name="servertrack_enabled" value="1"
                     <?php checked( 1, get_option( 'servertrack_enabled', 1 ) ); ?> />
-                <?php esc_html_e( 'Activate server-side event sending', 'servertrack' ); ?>
+                <span class="st-toggle-slider"></span>
             </label>
+            <span class="st-toggle-label">
+                <?php esc_html_e( 'Activate server-side event sending', 'servertrack' ); ?>
+            </span>
         </td>
     </tr>
     <tr>
         <th scope="row"><?php esc_html_e( 'Test Mode', 'servertrack' ); ?></th>
         <td>
-            <label>
+            <label class="st-toggle">
                 <input type="checkbox" name="servertrack_test_mode" value="1"
                     <?php checked( 1, get_option( 'servertrack_test_mode', 0 ) ); ?> />
-                <?php esc_html_e( 'Send events to platform test/sandbox endpoints only', 'servertrack' ); ?>
+                <span class="st-toggle-slider"></span>
             </label>
+            <span class="st-toggle-label">
+                <?php esc_html_e( 'Send events to platform test/sandbox endpoints only', 'servertrack' ); ?>
+            </span>
             <p class="description"><?php esc_html_e( 'Enable this during development. Disable before going live.', 'servertrack' ); ?></p>
         </td>
     </tr>
