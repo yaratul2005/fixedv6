@@ -9,7 +9,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
     <tr>
         <th scope="row"><?php esc_html_e( 'Enable Meta CAPI', 'servertrack' ); ?></th>
         <td>
-            <label class="st-toggle">
+            <div class="st-toggle-wrap">
+<label class="st-toggle">
                 <input type="checkbox" name="servertrack_meta_enabled" value="1"
                     <?php checked( 1, get_option( 'servertrack_meta_enabled', 0 ) ); ?> />
                 <span class="st-toggle-slider"></span>
@@ -17,6 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <span class="st-toggle-label">
                 <?php esc_html_e( 'Send events to Meta Conversions API', 'servertrack' ); ?>
             </span>
+</div>
         </td>
     </tr>
     <tr>
@@ -50,55 +52,68 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <fieldset>
                 <legend class="screen-reader-text"><span><?php esc_html_e( 'Advanced Matching Signals', 'servertrack' ); ?></span></legend>
                 <p class="description" style="margin-bottom:8px;"><?php esc_html_e( 'Select which customer signals to hash and send to Meta to improve match quality.', 'servertrack' ); ?></p>
-                <label class="st-toggle">
+                <div class="st-toggle-wrap">
+<label class="st-toggle">
                 <input type="checkbox" name="servertrack_meta_am_email" value="1"
                     <?php checked( 1, get_option( 'servertrack_meta_am_email', 1 ) ); ?> />
                 <span class="st-toggle-slider"></span>
             </label>
             <span class="st-toggle-label">
                     <?php esc_html_e( 'Email', 'servertrack' ); ?>
-                </span><br>
-                <label class="st-toggle">
+                </span>
+</div><br>
+                <div class="st-toggle-wrap">
+<label class="st-toggle">
                 <input type="checkbox" name="servertrack_meta_am_phone" value="1"
                     <?php checked( 1, get_option( 'servertrack_meta_am_phone', 1 ) ); ?> />
                 <span class="st-toggle-slider"></span>
             </label>
             <span class="st-toggle-label">
                     <?php esc_html_e( 'Phone Number', 'servertrack' ); ?>
-                </span><br>
-                <label class="st-toggle">
+                </span>
+</div><br>
+                <div class="st-toggle-wrap">
+<label class="st-toggle">
                 <input type="checkbox" name="servertrack_meta_am_name" value="1"
                     <?php checked( 1, get_option( 'servertrack_meta_am_name', 1 ) ); ?> />
                 <span class="st-toggle-slider"></span>
             </label>
             <span class="st-toggle-label">
                     <?php esc_html_e( 'First & Last Name', 'servertrack' ); ?>
-                </span><br>
-                <label class="st-toggle">
+                </span>
+</div><br>
+                <div class="st-toggle-wrap">
+<label class="st-toggle">
                 <input type="checkbox" name="servertrack_meta_am_city" value="1"
                     <?php checked( 1, get_option( 'servertrack_meta_am_city', 1 ) ); ?> />
                 <span class="st-toggle-slider"></span>
             </label>
             <span class="st-toggle-label">
                     <?php esc_html_e( 'City', 'servertrack' ); ?>
-                </span><br>
-                <label class="st-toggle">
+                </span>
+</div><br>
+                <div class="st-toggle-wrap">
+<label class="st-toggle">
                 <input type="checkbox" name="servertrack_meta_am_state" value="1"
                     <?php checked( 1, get_option( 'servertrack_meta_am_state', 1 ) ); ?> />
                 <span class="st-toggle-slider"></span>
             </label>
             <span class="st-toggle-label">
                     <?php esc_html_e( 'State / Province', 'servertrack' ); ?>
-                </span><br>
-                <label class="st-toggle">
+                </span>
+</div><br>
+                <div class="st-toggle-wrap">
+<label class="st-toggle">
                 <input type="checkbox" name="servertrack_meta_am_zip" value="1"
                     <?php checked( 1, get_option( 'servertrack_meta_am_zip', 1 ) ); ?> />
                 <span class="st-toggle-slider"></span>
             </label>
             <span class="st-toggle-label">
                     <?php esc_html_e( 'ZIP / Postal Code', 'servertrack' ); ?>
-                </span><br>
-                <label class="st-toggle">
+                </span>
+</div><br>
+                <div class="st-toggle-wrap">
+<label class="st-toggle">
                 <input type="checkbox" name="servertrack_meta_am_country" value="1"
                     <?php checked( 1, get_option( 'servertrack_meta_am_country', 1 ) ); ?> />
                 <span class="st-toggle-slider"></span>
@@ -106,6 +121,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <span class="st-toggle-label">
                     <?php esc_html_e( 'Country', 'servertrack' ); ?>
                 </span>
+</div>
             </fieldset>
         </td>
     </tr>

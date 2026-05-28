@@ -18,7 +18,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
         <tr>
             <th scope="row"><?php esc_html_e( 'Enable Google Ads', 'servertrack' ); ?></th>
             <td>
-                <label class="st-toggle">
+                <div class="st-toggle-wrap">
+<label class="st-toggle">
                 <input type="checkbox" name="servertrack_google_enabled" value="1"
                         id="st-google-enabled"
                         <?php checked( 1, get_option( 'servertrack_google_enabled', 0 ) ); ?>
@@ -26,6 +27,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             </label>
             <span class="st-toggle-label">>
                     <?php esc_html_e( 'Send server-side conversion events to Google Ads (Enhanced Conversions).', 'servertrack' ); ?></span>
+</div>
             </td>
         </tr>
 
@@ -157,15 +159,18 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                 <td>
                     <fieldset>
                         <legend class="screen-reader-text"><span><?php esc_html_e( 'Consent Mode v2 defaults', 'servertrack' ); ?></span></legend>
-                        <label class="st-toggle">
+                        <div class="st-toggle-wrap">
+<label class="st-toggle">
                 <input type="checkbox" name="servertrack_google_consent_ad_user_data" value="1"
                     <?php checked( 1, get_option( 'servertrack_google_consent_ad_user_data', 1 ) ); ?> />
                 <span class="st-toggle-slider"></span>
             </label>
             <span class="st-toggle-label">
                             <?php esc_html_e( 'Grant ad_user_data by default', 'servertrack' ); ?>
-                        </span><br>
-                        <label class="st-toggle">
+                        </span>
+</div><br>
+                        <div class="st-toggle-wrap">
+<label class="st-toggle">
                 <input type="checkbox" name="servertrack_google_consent_ad_personalization" value="1"
                     <?php checked( 1, get_option( 'servertrack_google_consent_ad_personalization', 1 ) ); ?> />
                 <span class="st-toggle-slider"></span>
@@ -173,6 +178,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <span class="st-toggle-label">
                             <?php esc_html_e( 'Grant ad_personalization by default', 'servertrack' ); ?>
                         </span>
+</div>
                         <p class="description"><?php esc_html_e( 'If the user declines consent via your CMP, these signals will dynamically be set to DENIED in the CAPI payload regardless of these defaults.', 'servertrack' ); ?></p>
                     </fieldset>
                 </td>

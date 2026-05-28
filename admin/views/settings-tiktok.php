@@ -9,7 +9,8 @@ if ( ! defined( 'ABSPATH' ) ) exit;
     <tr>
         <th scope="row"><?php esc_html_e( 'Enable TikTok Events', 'servertrack' ); ?></th>
         <td>
-            <label class="st-toggle">
+            <div class="st-toggle-wrap">
+<label class="st-toggle">
                 <input type="checkbox" name="servertrack_tiktok_enabled" value="1"
                     <?php checked( 1, get_option( 'servertrack_tiktok_enabled', 0 ) ); ?> />
                 <span class="st-toggle-slider"></span>
@@ -17,6 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <span class="st-toggle-label">
                 <?php esc_html_e( 'Send events to TikTok Events API', 'servertrack' ); ?>
             </span>
+</div>
         </td>
     </tr>
     <tr>
