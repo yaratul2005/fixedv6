@@ -577,7 +577,7 @@ class ServerTrack_Dashboard {
                 drainBtn.addEventListener('click', function(){
                     drainBtn.disabled = true;
                     drainBtn.textContent = 'Draining…';
-                    fetch(ajaxUrl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'action=servertrack_drain_retries&nonce='+encodeURIComponent(nonce)})
+                    var fd=new FormData(); fd.append('action','servertrack_drain_retries'); fd.append('nonce',nonce); fetch(ajaxUrl,{method:'POST',body:fd})
                     .then(function(r){return r.json();})
                     .then(function(res){ drainBtn.textContent = res.success ? 'Done' : 'Error'; })
                     .catch(function(){ drainBtn.textContent = 'Error'; });
@@ -673,6 +673,7 @@ class ServerTrack_Dashboard {
         return [
             'today_count'  => $today_count,
             'week_total'   => $week_total,
+            'week_success' => $week_success,
             'week_errors'  => $week_errors,
             'success_rate' => $week_total > 0 ? (int) round( $week_success / $week_total * 100 ) : 0,
             'avg_emq'      => $emq_count > 0  ? number_format( $emq_sum / $emq_count, 1 ) : '—',
@@ -762,11 +763,14 @@ class ServerTrack_Dashboard {
         if ( ! current_user_can( 'manage_options' ) ) wp_send_json_error( 'Unauthorized' );
         $queue = get_option( 'servertrack_retry_queue', [] );
         if ( empty( $queue ) ) { wp_send_json_success( [ 'drained' => 0 ] ); return; }
-        $drained = 0;
-        foreach ( $queue as $item ) {
-            if ( class_exists( 'ServerTrack_Retry' ) ) { ServerTrack_Retry::process_item( $item ); $drained++; }
+
+        $initial_count = count( $queue );
+        if ( class_exists( 'ServerTrack_Retry' ) ) {
+            ServerTrack_Retry::process();
         }
-        delete_option( 'servertrack_retry_queue' );
+        $new_queue = get_option( 'servertrack_retry_queue', [] );
+        $drained = $initial_count - count( $new_queue );
+
         wp_send_json_success( [ 'drained' => $drained ] );
     }
 }
