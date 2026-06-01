@@ -73,11 +73,7 @@ class ServerTrack_OfflineConversion {
 
 		ServerTrack_Dedup::set( $key );
 
-		wp_schedule_single_event(
-			time() + 300,
-			'servertrack_offline_upload_batch',
-			[ [ 'order_id' => $order_id ] ]
-		);
+		as_schedule_single_action( time() + 300, 'servertrack_offline_upload_batch', [ [ 'order_id' => $order_id ] ] );
 	}
 
 	/**

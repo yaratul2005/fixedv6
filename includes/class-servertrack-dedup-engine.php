@@ -36,14 +36,29 @@ class ServerTrack_DedupEngine {
      */
     public static function check_and_mark( string $event_name, string $external_id, string $product_id = '', string $platform = 'all' ): bool {
         $fingerprint = self::generate_fingerprint( $event_name, $external_id, $product_id );
-        $transient_key = 'st_dedup_' . $fingerprint . '_' . $platform;
+        $cache_key = 'st_dedup_' . $fingerprint . '_' . $platform;
 
-        if ( get_transient( $transient_key ) ) {
+        // Try object cache first (Redis/Memcached if available)
+        $found = false;
+        $cached = wp_cache_get( $cache_key, 'servertrack_dedup', false, $found );
+
+        if ( $found && $cached ) {
             return true; // Already processed
         }
 
+        // Fallback to transient if object cache is not persistent,
+        // but wp_cache_set acts as a local memory array even without persistent cache,
+        // which helps during a single request lifecycle anyway.
+        // We'll still use transient as the cross-request fallback if needed, but primarily wp_cache.
+        if ( get_transient( $cache_key ) ) {
+            // Populate cache so next time we don't hit DB
+            wp_cache_set( $cache_key, true, 'servertrack_dedup', self::BUCKET_SIZE * 2 );
+            return true;
+        }
+
         // Mark as processed (valid for 10 minutes to cover the bucket overlap safely)
-        set_transient( $transient_key, true, self::BUCKET_SIZE * 2 );
+        wp_cache_set( $cache_key, true, 'servertrack_dedup', self::BUCKET_SIZE * 2 );
+        set_transient( $cache_key, true, self::BUCKET_SIZE * 2 );
 
         return false;
     }

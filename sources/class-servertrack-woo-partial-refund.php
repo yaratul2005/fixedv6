@@ -90,12 +90,7 @@ class ServerTrack_WooPartialRefund {
             '', '', $order_id, 'PartialRefund'
         );
 
-        wp_schedule_single_event(
-            time(),
-            'servertrack_send_partial_refund',
-            [ $order_id, $refund_id ]
-        );
-        spawn_cron();
+        as_enqueue_async_action( 'servertrack_send_partial_refund', [ $order_id, $refund_id ] );
     }
 
     // ── Async cron handler ────────────────────────────────────────────────────

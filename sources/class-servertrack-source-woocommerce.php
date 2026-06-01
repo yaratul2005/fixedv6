@@ -155,7 +155,7 @@ class ServerTrack_Source_WooCommerce {
             return; // All platforms already received this event
         }
 
-        $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ];
+        $user_data   = array_merge([ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ], ServerTrack_Identity::get_session_enrichment($order->get_customer_id(), function_exists('WC') && WC()->session ? WC()->session->get_customer_id() : ''));
         $custom_data = [
             'order_id'     => $order_id,
             'value'        => (float) $order->get_total(),
@@ -215,7 +215,7 @@ class ServerTrack_Source_WooCommerce {
             return; // All platforms already received this event
         }
 
-        $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_user( get_current_user_id() ) ];
+        $user_data   = array_merge([ 'external_id' => ServerTrack_Identity::get_external_id_for_user( get_current_user_id() ) ], ServerTrack_Identity::get_session_enrichment(get_current_user_id(), function_exists('WC') && WC()->session ? WC()->session->get_customer_id() : ''));
         $custom_data = [
             'content_ids'  => [ (string) $product_id ],
             'content_name' => $product->get_name(),
@@ -271,7 +271,7 @@ class ServerTrack_Source_WooCommerce {
             return;
         }
 
-        $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ];
+        $user_data   = array_merge([ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ], ServerTrack_Identity::get_session_enrichment($order->get_customer_id(), function_exists('WC') && WC()->session ? WC()->session->get_customer_id() : ''));
         $custom_data = [
             'order_id'    => $order_id,
             'refund_id'   => $refund_id,
@@ -296,22 +296,19 @@ class ServerTrack_Source_WooCommerce {
         /**
      * Manually fires a Purchase event for a given order, bypassing automatic suppressions.
      */
-    public static function fire_manual_purchase( int $order_id ): array {
+        public static function fire_manual_purchase( int $order_id ): array {
         $order = wc_get_order( $order_id );
         if ( ! $order ) {
             return [ 'success' => false, 'message' => 'Invalid order.' ];
         }
 
-        // Use a unique suffix for manual events so it doesn't get blocked by standard dedup if it was somehow triggered
-        $event_id    = ServerTrack_Hasher::event_id( 'Purchase', $order_id . '_manual' );
-
-        if ( ServerTrack_Dedup::already_sent( $event_id, 'meta' )
-          && ServerTrack_Dedup::already_sent( $event_id, 'tiktok' )
-          && ServerTrack_Dedup::already_sent( $event_id, 'google' ) ) {
+        if ( $order->get_meta( '_servertrack_manual_purchase_sent' ) === 'yes' ) {
             return [ 'success' => false, 'message' => 'Manual Purchase event has already been sent.' ];
         }
 
-        $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ];
+        // We use the regular order ID for event deduplication to ensure platforms recognize it properly if they somehow saw it before.
+        $event_id    = ServerTrack_Hasher::event_id( 'Purchase', $order_id );
+        $user_data   = array_merge([ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ], ServerTrack_Identity::get_session_enrichment($order->get_customer_id(), function_exists('WC') && WC()->session ? WC()->session->get_customer_id() : ''));
         $custom_data = ServerTrack_Catalog::from_order( $order ) ?: [];
 
         $event       = ( new ServerTrack_Event( 'Purchase', $event_id ) )
@@ -335,7 +332,7 @@ class ServerTrack_Source_WooCommerce {
           && ServerTrack_Dedup::already_sent( $order_id, 'google' ) ) {
             return;
         }
-        $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ];
+        $user_data   = array_merge([ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ], ServerTrack_Identity::get_session_enrichment($order->get_customer_id(), function_exists('WC') && WC()->session ? WC()->session->get_customer_id() : ''));
         $custom_data = ServerTrack_Catalog::from_order( $order ) ?: [];
         $event_id    = ServerTrack_Hasher::event_id( 'Purchase', $order_id );
         $event       = ( new ServerTrack_Event( 'Purchase', $event_id ) )
@@ -347,7 +344,7 @@ class ServerTrack_Source_WooCommerce {
     public static function handle_view_content( int $order_id ): void {
         $order = wc_get_order( $order_id );
         if ( ! $order ) return;
-        $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ];
+        $user_data   = array_merge([ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ], ServerTrack_Identity::get_session_enrichment($order->get_customer_id(), function_exists('WC') && WC()->session ? WC()->session->get_customer_id() : ''));
         $custom_data = ServerTrack_Catalog::from_order_summary( $order ) ?: [];
         global $servertrack_page_load_id;
         if ( empty( $servertrack_page_load_id ) ) {
@@ -376,7 +373,7 @@ class ServerTrack_Source_WooCommerce {
     ): void {
         $product = wc_get_product( $product_id );
         if ( ! $product ) return;
-        $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_user( get_current_user_id() ) ];
+        $user_data   = array_merge([ 'external_id' => ServerTrack_Identity::get_external_id_for_user( get_current_user_id() ) ], ServerTrack_Identity::get_session_enrichment(get_current_user_id(), function_exists('WC') && WC()->session ? WC()->session->get_customer_id() : ''));
         $custom_data = [
             'content_ids'  => [ (string) $product_id ],
             'content_name' => $product->get_name(),
@@ -413,7 +410,7 @@ class ServerTrack_Source_WooCommerce {
         }
         $session_key .= '_' . $servertrack_page_load_id;
 
-        $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_user( get_current_user_id() ) ];
+        $user_data   = array_merge([ 'external_id' => ServerTrack_Identity::get_external_id_for_user( get_current_user_id() ) ], ServerTrack_Identity::get_session_enrichment(get_current_user_id(), function_exists('WC') && WC()->session ? WC()->session->get_customer_id() : ''));
         $custom_data = ServerTrack_Catalog::from_cart();
         $event_id    = ServerTrack_Hasher::event_id( 'InitiateCheckout', $session_key );
         $event       = ( new ServerTrack_Event( 'InitiateCheckout', $event_id ) )
@@ -425,7 +422,7 @@ class ServerTrack_Source_WooCommerce {
     public static function handle_add_payment_info( int $order_id ): void {
         $order = wc_get_order( $order_id );
         if ( ! $order ) return;
-        $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ];
+        $user_data   = array_merge([ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ], ServerTrack_Identity::get_session_enrichment($order->get_customer_id(), function_exists('WC') && WC()->session ? WC()->session->get_customer_id() : ''));
         $custom_data = ServerTrack_Catalog::from_order_summary( $order ) ?: [];
         global $servertrack_page_load_id;
         if ( empty( $servertrack_page_load_id ) ) {
@@ -439,7 +436,7 @@ class ServerTrack_Source_WooCommerce {
     }
 
     public static function handle_complete_registration( int $customer_id ): void {
-        $user_data = [ 'external_id' => ServerTrack_Identity::get_external_id_for_user( $customer_id ) ];
+        $user_data = array_merge([ 'external_id' => ServerTrack_Identity::get_external_id_for_user( $customer_id ) ], ServerTrack_Identity::get_session_enrichment($customer_id, function_exists('WC') && WC()->session ? WC()->session->get_customer_id() : ''));
         $event_id  = ServerTrack_Hasher::event_id( 'CompleteRegistration', $customer_id );
         $event     = ( new ServerTrack_Event( 'CompleteRegistration', $event_id ) )
             ->set_user_data( $user_data )
@@ -467,7 +464,7 @@ class ServerTrack_Source_WooCommerce {
             return;
         }
 
-        $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ];
+        $user_data   = array_merge([ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ], ServerTrack_Identity::get_session_enrichment($order->get_customer_id(), function_exists('WC') && WC()->session ? WC()->session->get_customer_id() : ''));
         $custom_data = [
             'order_id'    => $order_id,
             'value'       => -(float) $order->get_total(),

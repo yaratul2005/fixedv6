@@ -86,7 +86,7 @@ class ServerTrack_WooAbandonment {
         add_action( self::CRON_HOOK,                      [ self::class, 'process_abandonments' ] );
 
         // Schedule the 15-minute cron if not already scheduled
-        if ( ! wp_next_scheduled( self::CRON_HOOK ) ) {
+        if ( ! as_next_scheduled_action( self::CRON_HOOK ) ) {
             wp_schedule_event( time(), 'servertrack_15min', self::CRON_HOOK );
         }
 

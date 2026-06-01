@@ -69,7 +69,7 @@ class ServerTrack_WooRenewals {
         $event_id = ServerTrack_Dedup::generate_event_id( 'renewal_' . $renewal_order_id );
         ServerTrack_Dedup::store_event_id( $renewal_order_id, $event_id );
         ServerTrack_Logger::log( 'queued', 'all', 'Subscription renewal order #' . $renewal_order_id . ' queued for server-side tracking.', '', $event_id, $renewal_order_id, 'Purchase' );
-        wp_schedule_single_event( time(), 'servertrack_send_renewal_purchase', [ $renewal_order_id ] );
+        as_enqueue_async_action( 'servertrack_send_renewal_purchase', [ $renewal_order_id ] );
     }
 
     public static function send_renewal_async( int $renewal_order_id ) {
@@ -144,12 +144,7 @@ class ServerTrack_WooRenewals {
             '', '', $subscription_id, 'SubscriptionCancelled'
         );
 
-        wp_schedule_single_event(
-            time(),
-            'servertrack_send_subscription_cancelled',
-            [ $subscription_id ]
-        );
-        spawn_cron();
+        as_enqueue_async_action( 'servertrack_send_subscription_cancelled', [ $subscription_id ] );
     }
 
     /**

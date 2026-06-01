@@ -90,8 +90,7 @@ class ServerTrack_WooCommerce {
 
         // Also schedule via cron as a secondary safety net for
         // environments where the direct call is cut short by PHP timeout.
-        wp_schedule_single_event( time() + 5, 'servertrack_send_woo_purchase', [ $order_id, 'thankyou_cron' ] );
-        spawn_cron();
+        as_schedule_single_action( time() + 5, 'servertrack_send_woo_purchase', [ $order_id, 'thankyou_cron' ] );
     }
 
     public static function on_order_completed( int $order_id ) {
@@ -105,8 +104,7 @@ class ServerTrack_WooCommerce {
         }
         // Direct call first, cron as fallback
         self::send_purchase_async( $order_id, 'completed' );
-        wp_schedule_single_event( time() + 5, 'servertrack_send_woo_purchase', [ $order_id, 'completed_cron' ] );
-        spawn_cron();
+        as_schedule_single_action( time() + 5, 'servertrack_send_woo_purchase', [ $order_id, 'completed_cron' ] );
     }
 
     public static function on_order_refunded( int $order_id ) {
@@ -117,8 +115,7 @@ class ServerTrack_WooCommerce {
         $order->save_meta_data();
         ServerTrack_Logger::log( 'queued', 'all', 'Refund queued for #' . $order_id, '', ServerTrack_Dedup::get_event_id( $order_id ), $order_id, 'Refund' );
         self::send_refund_async( $order_id );
-        wp_schedule_single_event( time() + 5, 'servertrack_send_woo_refund', [ $order_id ] );
-        spawn_cron();
+        as_schedule_single_action( time() + 5, 'servertrack_send_woo_refund', [ $order_id ] );
     }
 
     /**
@@ -257,8 +254,7 @@ class ServerTrack_WooCommerce {
         if ( ! $product_id ) return;
         // BUG-B FIX: call directly, schedule as fallback
         self::send_view_content_async( $product_id, self::build_browser_user_data() );
-        wp_schedule_single_event( time() + 5, 'servertrack_send_woo_view_content', [ $product_id, self::build_browser_user_data() ] );
-        spawn_cron();
+        as_schedule_single_action( time() + 5, 'servertrack_send_woo_view_content', [ $product_id, self::build_browser_user_data() ] );
     }
 
     public static function send_view_content_async( int $product_id, array $context ) {

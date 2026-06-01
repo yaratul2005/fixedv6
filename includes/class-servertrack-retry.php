@@ -56,6 +56,7 @@ class ServerTrack_Retry {
 
     public static function init(): void {
         add_action( 'servertrack_process_retry_queue', [ self::class, 'process' ] );
+        add_action( 'servertrack_process_single_retry', [ self::class, 'process_single_retry' ], 10, 2 );
     }
 
     // ── Queue management ──────────────────────────────────────────────────
@@ -73,7 +74,7 @@ class ServerTrack_Retry {
      * @param array  $result     Result array from platform sender
      * @param array  $event_args Serialisable event arguments
      */
-    public static function maybe_queue( string $platform, array $result, array $event_args ): void {
+        public static function maybe_queue( string $platform, array $result, array $event_args ): void {
         $status = $result['status'] ?? '';
         $code   = (int) ( $result['http_code'] ?? 0 );
 
@@ -85,120 +86,146 @@ class ServerTrack_Retry {
             return;
         }
 
-        $queue = get_option( self::QUEUE_OPTION, [] );
-
-        // Stable UID prevents duplicate queue entries on race conditions
+        // Action Scheduler makes this simple.
         $uid = md5( $platform . ( $event_args['event_id'] ?? '' ) );
 
-        if ( isset( $queue[ $uid ] ) ) {
-            return; // Already queued
-        }
+        // We will schedule a single retry immediately, well, delayed.
+        $delay = self::BACKOFF_BASE;
 
-        $attempts = 0;
-        $delay    = self::BACKOFF_BASE;
-
-        $queue[ $uid ] = [
-            'platform'     => $platform,
-            'event_name'   => $event_args['event_name'] ?? 'Unknown',   // v2.2: top-level for dashboard
-            'event_args'   => $event_args,
-            'attempts'     => $attempts,
-            'next_retry'   => time() + $delay,
-            'queued_at'    => time(),
-            'last_attempt' => null,                                       // v2.2: set on first attempt
+        $args = [
+            'uid'        => $uid,
+            'platform'   => $platform,
+            'event_args' => $event_args,
+            'attempts'   => 0
         ];
 
-        update_option( self::QUEUE_OPTION, $queue, false );
+        // Ensure not already queued for this specific delay
+        if ( ! as_next_scheduled_action( 'servertrack_process_single_retry', $args ) ) {
+            as_schedule_single_action( time() + $delay, 'servertrack_process_single_retry', $args );
+        }
+
+        // Still keep in queue list for dashboard visualization if needed, but the actual processing is AS.
+        $queue = get_option( self::QUEUE_OPTION, [] );
+        if ( ! isset( $queue[ $uid ] ) ) {
+            $queue[ $uid ] = [
+                'platform'     => $platform,
+                'event_name'   => $event_args['event_name'] ?? 'Unknown',
+                'event_args'   => $event_args,
+                'attempts'     => 0,
+                'next_retry'   => time() + $delay,
+                'queued_at'    => time(),
+                'last_attempt' => null,
+            ];
+            update_option( self::QUEUE_OPTION, $queue, false );
+        }
     }
 
     /**
      * Process the retry queue.
      * Called by WP-Cron every 5 minutes.
      */
-    public static function process(): void {
-        $lock_key = 'servertrack_retry_processing_lock';
-        if ( get_transient( $lock_key ) ) {
+        public static function process_single_retry( $args, $extra = null ) {
+        if(is_string($args) && is_array($extra)) { // Handling old vs new AS calling conventions
+            $args = $extra;
+        }
+
+        $uid        = $args['uid'];
+        $platform   = $args['platform'];
+        $event_args = $args['event_args'];
+        $attempts   = (int)$args['attempts'];
+
+        $queue = get_option( self::QUEUE_OPTION, [] );
+
+        if ( $attempts >= self::MAX_ATTEMPTS ) {
+            if ( isset( $queue[ $uid ] ) ) {
+                unset( $queue[ $uid ] );
+                update_option( self::QUEUE_OPTION, $queue, false );
+            }
+            ServerTrack_Logger::warning(
+                sprintf( 'Retry abandoned after %d attempts [uid=%s].', self::MAX_ATTEMPTS, $uid )
+            );
             return;
         }
-        set_transient( $lock_key, true, 30 );
 
-        try {
-            $queue = get_option( self::QUEUE_OPTION, [] );
-            if ( empty( $queue ) ) {
-                return;
+        if ( isset( $queue[ $uid ] ) ) {
+            $queue[ $uid ]['last_attempt'] = gmdate( 'Y-m-d H:i:s' );
+            $queue[ $uid ]['attempts'] = $attempts;
+            update_option( self::QUEUE_OPTION, $queue, false );
+        }
+
+        $result = self::dispatch_retry( $platform, $event_args );
+
+        if ( ( $result['status'] ?? '' ) === 'success' ) {
+            if ( isset( $queue[ $uid ] ) ) {
+                unset( $queue[ $uid ] );
+                update_option( self::QUEUE_OPTION, $queue, false );
             }
+
+            $order_id  = (int) ( $event_args['custom_data']['order_id'] ?? 0 );
+            $dedup_key = (string) ( $event_args['dedup_key'] ?? '' );
+
+            if ( '' !== $dedup_key ) {
+                ServerTrack_Dedup::mark_string_sent( $dedup_key, $platform );
+            } elseif ( $order_id > 0 ) {
+                ServerTrack_Dedup::mark_as_sent( $order_id, $platform );
+            }
+
+            ServerTrack_Logger::info(
+                sprintf( 'Retry succeeded [uid=%s platform=%s attempt=%d].', $uid, $platform, $attempts + 1 )
+            );
+
+        } else {
+            $attempts++;
+            if ( $attempts < self::MAX_ATTEMPTS ) {
+                $delay = self::BACKOFF_BASE * ( 2 ** $attempts );
+                $new_args = [
+                    'uid'        => $uid,
+                    'platform'   => $platform,
+                    'event_args' => $event_args,
+                    'attempts'   => $attempts
+                ];
+                as_schedule_single_action( time() + $delay, 'servertrack_process_single_retry', $new_args );
+
+                if ( isset( $queue[ $uid ] ) ) {
+                    $queue[ $uid ]['attempts'] = $attempts;
+                    $queue[ $uid ]['next_retry'] = time() + $delay;
+                    update_option( self::QUEUE_OPTION, $queue, false );
+                }
+            } else {
+                if ( isset( $queue[ $uid ] ) ) {
+                    unset( $queue[ $uid ] );
+                    update_option( self::QUEUE_OPTION, $queue, false );
+                }
+                ServerTrack_Logger::warning(
+                    sprintf( 'Retry abandoned after %d attempts [uid=%s].', self::MAX_ATTEMPTS, $uid )
+                );
+            }
+        }
+    }
+
+    public static function process(): void {
+        // Fallback or cleanup. Real processing is per-item now.
+        $queue = get_option( self::QUEUE_OPTION, [] );
+        if ( empty( $queue ) ) {
+            return;
+        }
 
         $now     = time();
         $updated = false;
 
         foreach ( $queue as $uid => $item ) {
-            if ( $item['next_retry'] > $now ) {
-                continue; // Not yet due
+            if ( $item['next_retry'] <= $now ) {
+                 // Missed AS? Schedule it immediately.
+                 $args = [
+                     'uid' => $uid,
+                     'platform' => $item['platform'],
+                     'event_args' => $item['event_args'],
+                     'attempts' => $item['attempts']
+                 ];
+                 if ( ! as_next_scheduled_action( 'servertrack_process_single_retry', $args ) ) {
+                     as_enqueue_async_action( 'servertrack_process_single_retry', $args );
+                 }
             }
-
-            if ( $item['attempts'] >= self::MAX_ATTEMPTS ) {
-                unset( $queue[ $uid ] );
-                $updated = true;
-                ServerTrack_Logger::warning(
-                    sprintf( 'Retry abandoned after %d attempts [uid=%s].', self::MAX_ATTEMPTS, $uid )
-                );
-                continue;
-            }
-
-            $platform   = $item['platform'];
-            $event_args = $item['event_args'];
-            $result     = self::dispatch_retry( $platform, $event_args );
-
-            // v2.2: always stamp last_attempt
-            $item['last_attempt'] = gmdate( 'Y-m-d H:i:s' );
-
-            if ( ( $result['status'] ?? '' ) === 'success' ) {
-                unset( $queue[ $uid ] );
-                $updated = true;
-
-                /*
-                 * BUG-08 DEFINITIVE FIX (v2.3):
-                 *
-                 *   String-keyed non-order events (subscriptions, cart abandonment,
-                 *   offline conversions) carry a string $dedup_key in event_args
-                 *   and order_id = 0. The correct dedup method for these is
-                 *   Dedup::set( string $key ), which writes to wp_options.
-                 *
-                 *   Integer order_id events (standard WooCommerce purchases) use
-                 *   Dedup::mark_as_sent( int $order_id, string $platform ), which
-                 *   writes to order meta.
-                 *
-                 *   v2.1 mistakenly routed string keys through mark_as_sent() which
-                 *   requires int — causing a TypeError in strict mode and silent
-                 *   data corruption otherwise.
-                 */
-                $order_id  = (int) ( $event_args['custom_data']['order_id'] ?? 0 );
-                $dedup_key = (string) ( $event_args['dedup_key'] ?? '' );
-
-                if ( '' !== $dedup_key ) {
-                    // Non-order event: use the options-based string-key dedup API.
-                    ServerTrack_Dedup::mark_string_sent( $dedup_key, $platform );
-                } elseif ( $order_id > 0 ) {
-                    // Standard WooCommerce order: use the order-meta dedup API.
-                    ServerTrack_Dedup::mark_as_sent( $order_id, $platform );
-                }
-
-                ServerTrack_Logger::info(
-                    sprintf( 'Retry succeeded [uid=%s platform=%s attempt=%d].', $uid, $platform, $item['attempts'] + 1 )
-                );
-
-            } else {
-                $item['attempts']++;
-                $item['next_retry'] = time() + ( self::BACKOFF_BASE * ( 2 ** $item['attempts'] ) );
-                $queue[ $uid ]      = $item;
-                $updated            = true;
-            }
-        }
-
-        if ( $updated ) {
-                update_option( self::QUEUE_OPTION, $queue, false );
-            }
-        } finally {
-            delete_transient( $lock_key );
         }
     }
 

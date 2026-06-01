@@ -91,8 +91,8 @@ class ServerTrack_CartAbandonment {
 
         // Schedule the abandonment check
         // wp_schedule_single_event won't double-schedule if same hook+args exists
-        if ( ! wp_next_scheduled( 'servertrack_check_abandonment', [ $session_id ] ) ) {
-            wp_schedule_single_event( time() + $window, 'servertrack_check_abandonment', [ $session_id ] );
+        if ( ! as_next_scheduled_action( 'servertrack_check_abandonment', [ $session_id ] ) ) {
+            as_schedule_single_action( time() + $window, 'servertrack_check_abandonment', [ $session_id ] );
         }
     }
 

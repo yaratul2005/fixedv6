@@ -128,12 +128,7 @@ class ServerTrack_WooOrderStatus {
             '', '', $order_id, self::TRACKED_STATUSES[ $status ]
         );
 
-        wp_schedule_single_event(
-            time(),
-            'servertrack_send_order_status_event',
-            [ $order_id, $status ]
-        );
-        spawn_cron();
+        as_enqueue_async_action( 'servertrack_send_order_status_event', [ $order_id, $status ] );
     }
 
     // ── Async cron handler ────────────────────────────────────────────────────

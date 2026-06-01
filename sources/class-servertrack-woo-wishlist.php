@@ -128,7 +128,6 @@ class ServerTrack_WooWishlist {
             'servertrack_send_wishlist_add',
             [ [ 'product_id' => $product_id, 'context' => $context ] ]
         );
-        spawn_cron();
     }
 
     // ── Async cron handler ────────────────────────────────────────────────────

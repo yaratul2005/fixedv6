@@ -300,19 +300,6 @@ function servertrack_register_defaults(): void {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// WP-Cron schedules
-// ─────────────────────────────────────────────────────────────────────────────
-add_filter( 'cron_schedules', function ( array $schedules ): array {
-    if ( ! isset( $schedules['every_five_minutes'] ) ) {
-        $schedules['every_five_minutes'] = [
-            'interval' => 300,
-            'display'  => __( 'Every 5 Minutes', 'servertrack' ),
-        ];
-    }
-    return $schedules;
-} );
-
-// ─────────────────────────────────────────────────────────────────────────────
 // Activation / deactivation
 // ─────────────────────────────────────────────────────────────────────────────
 add_action( 'servertrack_cleanup_dedup', function() {
@@ -325,21 +312,22 @@ register_activation_hook( __FILE__, function (): void {
     servertrack_create_tables();
     servertrack_register_defaults();
 
-    if ( ! wp_next_scheduled( 'servertrack_cleanup_dedup' ) ) {
-        wp_schedule_event( time(), 'daily', 'servertrack_cleanup_dedup' );
+    if ( false === as_next_scheduled_action( 'servertrack_cleanup_dedup' ) ) {
+        as_schedule_recurring_action( time(), DAY_IN_SECONDS, 'servertrack_cleanup_dedup' );
     }
 
-    if ( ! wp_next_scheduled( 'servertrack_process_retry_queue' ) ) {
-        wp_schedule_event( time(), 'every_five_minutes', 'servertrack_process_retry_queue' );
+    if ( false === as_next_scheduled_action( 'servertrack_process_retry_queue' ) ) {
+        as_schedule_recurring_action( time(), 300, 'servertrack_process_retry_queue' );
     }
     if ( get_option( 'servertrack_source_cart_abandonment_enabled', 0 ) ) {
-        if ( ! wp_next_scheduled( 'servertrack_check_abandonment' ) ) {
-            wp_schedule_event( time(), 'every_five_minutes', 'servertrack_check_abandonment' );
+        if ( false === as_next_scheduled_action( 'servertrack_check_abandonment' ) ) {
+            as_schedule_recurring_action( time(), 900, 'servertrack_check_abandonment' );
         }
     }
 } );
 
 register_deactivation_hook( __FILE__, function (): void {
-    wp_clear_scheduled_hook( 'servertrack_process_retry_queue' );
-    wp_clear_scheduled_hook( 'servertrack_check_abandonment' );
+    as_unschedule_all_actions( 'servertrack_process_retry_queue' );
+    as_unschedule_all_actions( 'servertrack_check_abandonment' );
+    as_unschedule_all_actions( 'servertrack_cleanup_dedup' );
 } );

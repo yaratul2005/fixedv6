@@ -74,7 +74,7 @@ class ServerTrack_Identity {
      * @param WC_Abstract_Order $order
      * @return string SHA-256 hashed external_id
      */
-    public static function get_external_id_for_order( WC_Abstract_Order $order ): string {
+        public static function get_external_id_for_order( WC_Abstract_Order $order ): string {
         // Logged-in customer
         $customer_id = (int) $order->get_customer_id();
         if ( $customer_id > 0 ) {
@@ -92,6 +92,43 @@ class ServerTrack_Identity {
 
         // Final fallback — hashed order ID
         return ServerTrack_Hasher::hash( (string) $order->get_id() );
+    }
+
+    /**
+     * Retrieve enriched session data (IP, UA, fbp, fbc, etc) based on user or session.
+     */
+    public static function get_session_enrichment( $user_id = 0, $session_id = '' ): array {
+        $data = [];
+
+        if ( $user_id > 0 ) {
+            $ip = get_user_meta( $user_id, '_st_session_ip', true );
+            $ua = get_user_meta( $user_id, '_st_session_ua', true );
+            $cookies = get_user_meta( $user_id, '_st_session_cookies', true );
+
+            if ( $ip ) $data['client_ip_address'] = $ip;
+            if ( $ua ) $data['client_user_agent'] = $ua;
+            if ( $cookies ) {
+                $c = json_decode( $cookies, true );
+                if ( !empty($c['fbp']) ) $data['fbp'] = $c['fbp'];
+                if ( !empty($c['fbc']) ) $data['fbc'] = $c['fbc'];
+                if ( !empty($c['ttp']) ) $data['ttp'] = $c['ttp'];
+            }
+        } elseif ( $session_id ) {
+            $ip = get_transient( 'st_session_ip_' . $session_id );
+            $ua = get_transient( 'st_session_ua_' . $session_id );
+            $cookies = get_transient( 'st_session_cookies_' . $session_id );
+
+            if ( $ip ) $data['client_ip_address'] = $ip;
+            if ( $ua ) $data['client_user_agent'] = $ua;
+            if ( $cookies ) {
+                $c = json_decode( $cookies, true );
+                if ( !empty($c['fbp']) ) $data['fbp'] = $c['fbp'];
+                if ( !empty($c['fbc']) ) $data['fbc'] = $c['fbc'];
+                if ( !empty($c['ttp']) ) $data['ttp'] = $c['ttp'];
+            }
+        }
+
+        return $data;
     }
 
     /**

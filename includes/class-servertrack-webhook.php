@@ -74,7 +74,7 @@ class ServerTrack_Webhook {
 		// with the same secret that was active when the event fired.
 		$secret = (string) get_option( 'servertrack_webhook_secret', '' );
 
-		wp_schedule_single_event( time() + 2, 'servertrack_deliver_webhook', [
+		as_schedule_single_action( time() + 2, 'servertrack_deliver_webhook', [
 			$platform, $event_name, $order_id, $status, $emq, $url, $secret,
 		] );
 	}

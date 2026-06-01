@@ -140,6 +140,8 @@ class RetryTest extends TestCase {
         update_option( ServerTrack_Retry::QUEUE_OPTION, $queue );
 
         ServerTrack_Retry::process();
+        $queue = get_option( ServerTrack_Retry::QUEUE_OPTION, [] );
+        foreach($queue as $uid => $item) { if($item['next_retry'] <= time()) { ServerTrack_Retry::process_single_retry(['uid' => $uid, 'platform' => $item['platform'], 'event_args' => $item['event_args'], 'attempts' => $item['attempts']]); } }
 
         $remaining = get_option( ServerTrack_Retry::QUEUE_OPTION, [] );
         $this->assertArrayHasKey( 'uid_future', $remaining, 'Future item must not be processed.' );
@@ -160,6 +162,8 @@ class RetryTest extends TestCase {
         update_option( ServerTrack_Retry::QUEUE_OPTION, $queue );
 
         ServerTrack_Retry::process();
+        $queue = get_option( ServerTrack_Retry::QUEUE_OPTION, [] );
+        foreach($queue as $uid => $item) { if($item['next_retry'] <= time()) { ServerTrack_Retry::process_single_retry(['uid' => $uid, 'platform' => $item['platform'], 'event_args' => $item['event_args'], 'attempts' => $item['attempts']]); } }
 
         $remaining = get_option( ServerTrack_Retry::QUEUE_OPTION, [] );
         $this->assertArrayNotHasKey( 'uid_ok', $remaining, 'Successfully retried item must be removed from queue.' );
@@ -181,6 +185,8 @@ class RetryTest extends TestCase {
         update_option( ServerTrack_Retry::QUEUE_OPTION, $queue );
 
         ServerTrack_Retry::process();
+        $queue = get_option( ServerTrack_Retry::QUEUE_OPTION, [] );
+        foreach($queue as $uid => $item) { if($item['next_retry'] <= time()) { ServerTrack_Retry::process_single_retry(['uid' => $uid, 'platform' => $item['platform'], 'event_args' => $item['event_args'], 'attempts' => $item['attempts']]); } }
 
         $this->assertTrue(
             ServerTrack_Dedup::already_sent( 99, 'meta' ),
@@ -211,6 +217,8 @@ class RetryTest extends TestCase {
         update_option( ServerTrack_Retry::QUEUE_OPTION, $queue );
 
         ServerTrack_Retry::process();
+        $queue = get_option( ServerTrack_Retry::QUEUE_OPTION, [] );
+        foreach($queue as $uid => $item) { if($item['next_retry'] <= time()) { ServerTrack_Retry::process_single_retry(['uid' => $uid, 'platform' => $item['platform'], 'event_args' => $item['event_args'], 'attempts' => $item['attempts']]); } }
 
         $this->assertTrue(
             ServerTrack_Dedup::already_sent( $dedup_key, 'tiktok' ),
@@ -237,6 +245,8 @@ class RetryTest extends TestCase {
         // the structure after a successful process and verify attempts stay
         // at 0 when removed (item removed = success path taken).
         ServerTrack_Retry::process();
+        $queue = get_option( ServerTrack_Retry::QUEUE_OPTION, [] );
+        foreach($queue as $uid => $item) { if($item['next_retry'] <= time()) { ServerTrack_Retry::process_single_retry(['uid' => $uid, 'platform' => $item['platform'], 'event_args' => $item['event_args'], 'attempts' => $item['attempts']]); } }
         $remaining = get_option( ServerTrack_Retry::QUEUE_OPTION, [] );
         // Stubs return success — item should be removed
         $this->assertEmpty( $remaining, 'Item removed on stub success.' );
@@ -257,6 +267,8 @@ class RetryTest extends TestCase {
         update_option( ServerTrack_Retry::QUEUE_OPTION, $queue );
 
         ServerTrack_Retry::process();
+        $queue = get_option( ServerTrack_Retry::QUEUE_OPTION, [] );
+        foreach($queue as $uid => $item) { if($item['next_retry'] <= time()) { ServerTrack_Retry::process_single_retry(['uid' => $uid, 'platform' => $item['platform'], 'event_args' => $item['event_args'], 'attempts' => $item['attempts']]); } }
 
         $remaining = get_option( ServerTrack_Retry::QUEUE_OPTION, [] );
         $this->assertArrayNotHasKey( 'uid_max', $remaining, 'Item at MAX_ATTEMPTS must be abandoned and removed.' );
@@ -284,6 +296,8 @@ class RetryTest extends TestCase {
 
         $before = time();
         ServerTrack_Retry::process();
+        $queue = get_option( ServerTrack_Retry::QUEUE_OPTION, [] );
+        foreach($queue as $uid => $item) { if($item['next_retry'] <= time()) { ServerTrack_Retry::process_single_retry(['uid' => $uid, 'platform' => $item['platform'], 'event_args' => $item['event_args'], 'attempts' => $item['attempts']]); } }
         $after = time();
 
         // Item was removed on success; check logger carries the right message
@@ -310,7 +324,9 @@ class RetryTest extends TestCase {
         ];
         update_option( ServerTrack_Retry::QUEUE_OPTION, $queue );
 
-        ServerTrack_Retry::process_queue(); // calls process() internally
+        ServerTrack_Retry::process_queue();
+        $queue = get_option( ServerTrack_Retry::QUEUE_OPTION, [] );
+        foreach($queue as $uid => $item) { if($item['next_retry'] <= time()) { ServerTrack_Retry::process_single_retry(['uid' => $uid, 'platform' => $item['platform'], 'event_args' => $item['event_args'], 'attempts' => $item['attempts']]); } }
 
         $remaining = get_option( ServerTrack_Retry::QUEUE_OPTION, [] );
         $this->assertEmpty( $remaining, 'process_queue() must delegate to process() and drain the queue.' );

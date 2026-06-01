@@ -85,21 +85,18 @@ class ServerTrack_Subscriptions {
         if ( ! get_option( 'servertrack_enabled', 1 ) ) return;
         $sub_id = $subscription->get_id();
         $ord_id = $renewal_order->get_id();
-        wp_schedule_single_event( time(), 'servertrack_send_sub_renewal', [ $sub_id, $ord_id ] );
-        spawn_cron();
+        as_enqueue_async_action( 'servertrack_send_sub_renewal', [ $sub_id, $ord_id ] );
     }
 
     public static function on_cancelled( WC_Subscription $subscription ): void {
         if ( ! get_option( 'servertrack_enabled', 1 ) ) return;
-        wp_schedule_single_event( time(), 'servertrack_send_sub_cancelled', [ $subscription->get_id() ] );
-        spawn_cron();
+        as_enqueue_async_action( 'servertrack_send_sub_cancelled', [ $subscription->get_id() ] );
     }
 
     public static function on_paused( WC_Subscription $subscription ): void {
         if ( ! get_option( 'servertrack_enabled', 1 ) ) return;
         if ( ! get_option( 'servertrack_meta_enabled', 0 ) ) return;
-        wp_schedule_single_event( time(), 'servertrack_send_sub_paused', [ $subscription->get_id() ] );
-        spawn_cron();
+        as_enqueue_async_action( 'servertrack_send_sub_paused', [ $subscription->get_id() ] );
     }
 
     // ────────────────────────────────────────────────────────────────────────

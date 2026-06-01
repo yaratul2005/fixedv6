@@ -72,7 +72,7 @@ class ServerTrack_Enrichment {
     /**
      * Captures and persists session IP/UA so cron events can attach them safely.
      */
-    public static function capture_session_signals(): void {
+        public static function capture_session_signals(): void {
         if ( is_admin() || wp_doing_cron() || defined( 'REST_REQUEST' ) ) {
             return;
         }
@@ -80,15 +80,32 @@ class ServerTrack_Enrichment {
         $ip = self::get_client_ip();
         $ua = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
 
+        // Capture first-party click/browser cookies for async event stitching
+        $fbp = isset( $_COOKIE['_fbp'] ) ? sanitize_text_field( wp_unslash( $_COOKIE['_fbp'] ) ) : '';
+        $fbc = isset( $_COOKIE['_fbc'] ) ? sanitize_text_field( wp_unslash( $_COOKIE['_fbc'] ) ) : '';
+        $ttp = isset( $_COOKIE['_ttp'] ) ? sanitize_text_field( wp_unslash( $_COOKIE['_ttp'] ) ) : '';
+
+        $cookie_payload = wp_json_encode( array_filter( [
+            'fbp' => $fbp,
+            'fbc' => $fbc,
+            'ttp' => $ttp
+        ] ) );
+
         if ( is_user_logged_in() ) {
             $user_id = get_current_user_id();
             update_user_meta( $user_id, '_st_session_ip', $ip );
             update_user_meta( $user_id, '_st_session_ua', $ua );
+            if ( $cookie_payload !== '[]' ) {
+                update_user_meta( $user_id, '_st_session_cookies', $cookie_payload );
+            }
         } elseif ( function_exists('WC') && WC()->session ) {
             $session_id = WC()->session->get_customer_id();
             if ( $session_id ) {
                 set_transient( 'st_session_ip_' . $session_id, $ip, DAY_IN_SECONDS );
                 set_transient( 'st_session_ua_' . $session_id, $ua, DAY_IN_SECONDS );
+                if ( $cookie_payload !== '[]' ) {
+                    set_transient( 'st_session_cookies_' . $session_id, $cookie_payload, DAY_IN_SECONDS );
+                }
             }
         }
     }

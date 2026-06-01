@@ -36,7 +36,7 @@ class ServerTrack_EDD {
         $event_id = ServerTrack_Dedup::generate_event_id( 'edd_purchase_' . $payment_id );
         ServerTrack_Dedup::store_event_id( $payment_id, $event_id );
 
-        wp_schedule_single_event( time(), 'servertrack_send_edd_purchase', [ $payment_id ] );
+        as_enqueue_async_action( 'servertrack_send_edd_purchase', [ $payment_id ] );
     }
 
     // ── Async cron handler ───────────────────────────────────────────────

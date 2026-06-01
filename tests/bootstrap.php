@@ -76,6 +76,7 @@ class WC_Order {
     public function get_billing_last_name(): string  { return 'User'; }
     public function get_billing_phone(): string      { return '+8801700000000'; }
     public function get_user_id(): int               { return 1; }
+    public function get_customer_id(): int { return 1; }
     public function get_amount(): float { return $this->total; }
 }
 
@@ -138,6 +139,7 @@ class ServerTrack_Identity {
     public static function from_user_id( int $id ): array { return []; }
     public static function get_external_id_for_user( $id ): string { return 'ext_' . $id; }
     public static function get_external_id_for_order( $order ): string { return 'ext_order_' . $order->get_id(); }
+    public static function get_session_enrichment($user_id, $session_id): array { return []; }
 }
 
 /**
@@ -255,4 +257,30 @@ function WC() {
     global $wc_mock;
     if (!$wc_mock) $wc_mock = new WCMock();
     return $wc_mock;
+}
+if (!function_exists('as_next_scheduled_action')) {
+    function as_next_scheduled_action($hook, $args = null, $group = '') { return false; }
+}
+if (!function_exists('as_schedule_single_action')) {
+    function as_schedule_single_action($timestamp, $hook, $args = [], $group = '') { return 1; }
+}
+if (!function_exists('as_schedule_recurring_action')) {
+    function as_schedule_recurring_action($timestamp, $interval_in_seconds, $hook, $args = [], $group = '') { return 1; }
+}
+if (!function_exists('as_enqueue_async_action')) {
+    function as_enqueue_async_action($hook, $args = [], $group = '') { return 1; }
+}
+if (!function_exists('as_unschedule_all_actions')) {
+    function as_unschedule_all_actions($hook, $args = [], $group = '') { }
+}
+if (!method_exists('ServerTrack_Identity', 'get_session_enrichment')) {
+    function get_session_enrichment($user_id, $session_id) { return []; }
+}
+class WC_Order_Extended extends WC_Order {
+    public function get_customer_id(): int { return 1; }
+}
+function wc_get_order_mock( int $id ) {
+    $order = new WC_Order_Extended();
+    $order->id = $id;
+    return $order;
 }
