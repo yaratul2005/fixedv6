@@ -209,7 +209,13 @@ class ServerTrack_Google {
         }
 
         // Google Consent Mode v2
-        $consent_granted = ServerTrack_Consent::is_granted( 'google', (int) ($event->custom_data['order_id'] ?? 0) );
+        $order_id = (int) ($event->custom_data['order_id'] ?? 0);
+        if ( $order_id > 0 ) {
+            $consent_granted = ServerTrack_Consent::is_granted( 'google', $order_id );
+        } else {
+            // Offline conversions default to true (store operator responsibility)
+            $consent_granted = apply_filters( 'servertrack_offline_consent_default', true );
+        }
         $click_conversion['consent'] = [
             'adUserData'        => $consent_granted ? 'GRANTED' : 'DENIED',
             'adPersonalization' => $consent_granted ? 'GRANTED' : 'DENIED',

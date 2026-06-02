@@ -47,7 +47,7 @@ class ServerTrack_Proxy {
 
         // Apply rate limit
         $ip = ServerTrack_Frontend::get_request_ip();
-        $ua = isset( $_SERVER['HTTP_USER_AGENT'] ) ? wp_hash( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : 'no-ua';
+        $ua = isset( $_SERVER['HTTP_USER_AGENT'] ) ? hash( 'sha256', wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : 'no-ua';
         $rate_key = 'st_proxy_rl_' . md5( $ip . $ua );
 
         $rate_count = get_transient( $rate_key ) ?: [ 'tokens' => 30, 'last_refill' => time() ];
