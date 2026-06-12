@@ -179,11 +179,25 @@ class ServerTrack_License {
                 'url'           => $data['homepage'] ?? self::STORE_URL,
                 'tested'        => $data['min_wp'] ?? '',
                 'requires_php'  => $data['min_php'] ?? '',
-                'sections'      => isset($data['sections']) ? maybe_unserialize($data['sections']) : [],
-                'banners'       => isset($data['banners']) ? maybe_unserialize($data['banners']) : [],
+                'sections'      => self::safe_unserialize( $data['sections'] ?? [] ),
+                'banners'       => self::safe_unserialize( $data['banners'] ?? [] ),
             ];
         }
 
         return [];
+    }
+
+    /**
+     * Safely unserialize data, preventing object instantiation.
+     *
+     * @param mixed $data The data to unserialize.
+     * @return mixed The unserialized data, or the original data if not serialized.
+     */
+    private static function safe_unserialize( $data ) {
+        if ( is_string( $data ) && is_serialized( $data ) ) {
+            $unserialized = @unserialize( $data, [ 'allowed_classes' => false ] );
+            return $unserialized !== false ? $unserialized : [];
+        }
+        return $data;
     }
 }
