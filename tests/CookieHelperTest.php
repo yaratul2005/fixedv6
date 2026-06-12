@@ -75,7 +75,7 @@ class CookieHelperTest extends TestCase {
 
         $this->assertArrayHasKey('_fbp', $_COOKIE);
         $this->assertStringContainsString('fb.1.', $_COOKIE['_fbp']);
-        $this->assertStringContainsString('.1234567890', $_COOKIE['_fbp']); // uses mocked wp_rand
+        $this->assertMatchesRegularExpression('/fb\.1\.\d+\.\d{10}/', $_COOKIE['_fbp']);
     }
 
     /**
