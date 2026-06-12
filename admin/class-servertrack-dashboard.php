@@ -514,7 +514,7 @@ class ServerTrack_Dashboard {
                             if(lc) lc.textContent = (res.data.total||0)+' events';
                         }
                     })
-                    .catch(function(){})
+                    .catch(function(e){ console.error('ServerTrack AJAX Error:', e); })
                     .finally(function(){
                         if(btn) btn.classList.remove('st-spinning');
                         if(spinner) spinner.style.display='none';
@@ -547,7 +547,7 @@ class ServerTrack_Dashboard {
                             eventsChart.update();
                         }
                     })
-                    .catch(function(){});
+                    .catch(function(e){ console.error('ServerTrack AJAX Error:', e); });
             }
 
             var manualBtn = document.getElementById('st-manual-refresh');
@@ -567,7 +567,7 @@ class ServerTrack_Dashboard {
                             var tbody = document.getElementById('st-log-tbody');
                             if(tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--st-faint);">Log cleared.</td></tr>';
                         }
-                    }).catch(function(){});
+                    }).catch(function(e){ console.error('ServerTrack AJAX Error:', e); });
                 });
             }
 
@@ -580,7 +580,7 @@ class ServerTrack_Dashboard {
                     fetch(ajaxUrl,{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'action=servertrack_drain_retries&nonce='+encodeURIComponent(nonce)})
                     .then(function(r){return r.json();})
                     .then(function(res){ drainBtn.textContent = res.success ? 'Done' : 'Error'; })
-                    .catch(function(){ drainBtn.textContent = 'Error'; });
+                    .catch(function(e){ console.error('ServerTrack AJAX Error:', e); drainBtn.textContent = 'Error'; });
                 });
             }
         });
