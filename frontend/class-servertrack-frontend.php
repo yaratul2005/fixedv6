@@ -216,8 +216,10 @@ class ServerTrack_Frontend {
         // Developers may accidentally pass user data (email, phone, etc.) in
         // the params object — remove them defensively to prevent plaintext PII
         // from appearing in the ServerTrack debug log table.
-        foreach ( self::PII_PARAM_BLOCKLIST as $pii_field ) {
-            unset( $params[ $pii_field ] );
+        foreach ( $params as $key => $value ) {
+            if ( in_array( strtolower( $key ), self::PII_PARAM_BLOCKLIST, true ) ) {
+                unset( $params[ $key ] );
+            }
         }
 
         $ua = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';

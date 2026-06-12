@@ -107,9 +107,10 @@ if ( class_exists( 'WooCommerce' ) && function_exists( 'wc_get_orders' ) ) {
     $hpos_table = $wpdb->prefix . 'wc_orders_meta';
     // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
     if ( $wpdb->get_var( $wpdb->prepare( 'SHOW TABLES LIKE %s', $hpos_table ) ) === $hpos_table ) {
-        foreach ( $meta_keys as $meta_key ) {
+        if ( ! empty( $meta_keys ) ) {
+            $placeholders = implode( ',', array_fill( 0, count( $meta_keys ), '%s' ) );
             // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-            $wpdb->delete( $hpos_table, [ 'meta_key' => $meta_key ], [ '%s' ] );
+            $wpdb->query( $wpdb->prepare( "DELETE FROM {$hpos_table} WHERE meta_key IN ($placeholders)", ...$meta_keys ) );
         }
     }
 }
