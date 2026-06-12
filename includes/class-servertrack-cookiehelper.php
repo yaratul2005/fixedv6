@@ -51,12 +51,7 @@ class ServerTrack_CookieHelper {
             $fbp_val = sanitize_text_field( wp_unslash( $_COOKIE['_fbp'] ) );
         } else {
             // Format: fb.subdomain_index.creation_time.random_number
-            try {
-                $rand = random_int( 1000000000, 9999999999 );
-            } catch ( \Exception $e ) {
-                $rand = wp_rand( 1000000000, 9999999999 );
-            }
-            $fbp_val = 'fb.1.' . ( $now * 1000 ) . '.' . $rand;
+            $fbp_val = 'fb.1.' . ( $now * 1000 ) . '.' . wp_rand( 1000000000, 9999999999 );
         }
         if ( $fbp_val ) {
             self::set_secure_cookie( '_fbp', $fbp_val, $now + 90 * DAY_IN_SECONDS, $domain, $secure );

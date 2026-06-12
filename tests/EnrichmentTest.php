@@ -6,6 +6,45 @@ require_once __DIR__ . '/../includes/class-servertrack-enrichment.php';
 
 class EnrichmentTest extends TestCase {
 
+    protected function setUp(): void {
+        parent::setUp();
+        $_SERVER = [];
+    }
+
+    public function test_get_client_ip_returns_cf_connecting_ip_highest_priority() {
+        $_SERVER['HTTP_CF_CONNECTING_IP'] = '1.1.1.1';
+        $_SERVER['HTTP_X_REAL_IP'] = '2.2.2.2';
+        $_SERVER['HTTP_X_FORWARDED_FOR'] = '3.3.3.3,4.4.4.4';
+        $_SERVER['REMOTE_ADDR'] = '5.5.5.5';
+
+        $this->assertEquals('1.1.1.1', ServerTrack_Enrichment::get_client_ip());
+    }
+
+    public function test_get_client_ip_returns_x_real_ip() {
+        $_SERVER['HTTP_X_REAL_IP'] = '2.2.2.2';
+        $_SERVER['HTTP_X_FORWARDED_FOR'] = '3.3.3.3,4.4.4.4';
+        $_SERVER['REMOTE_ADDR'] = '5.5.5.5';
+
+        $this->assertEquals('2.2.2.2', ServerTrack_Enrichment::get_client_ip());
+    }
+
+    public function test_get_client_ip_returns_last_x_forwarded_for() {
+        $_SERVER['HTTP_X_FORWARDED_FOR'] = '3.3.3.3, 4.4.4.4';
+        $_SERVER['REMOTE_ADDR'] = '5.5.5.5';
+
+        $this->assertEquals('4.4.4.4', ServerTrack_Enrichment::get_client_ip());
+    }
+
+    public function test_get_client_ip_returns_remote_addr_as_fallback() {
+        $_SERVER['REMOTE_ADDR'] = '5.5.5.5';
+
+        $this->assertEquals('5.5.5.5', ServerTrack_Enrichment::get_client_ip());
+    }
+
+    public function test_get_client_ip_returns_empty_if_nothing_set() {
+        $this->assertEquals('', ServerTrack_Enrichment::get_client_ip());
+    }
+
     /**
      * @dataProvider userAgentProvider
      */

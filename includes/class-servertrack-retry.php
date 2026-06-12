@@ -233,18 +233,14 @@ class ServerTrack_Retry {
 
             switch ( $platform ) {
                 case 'meta':
-                    $result = ServerTrack_Meta::send( $event );
-                    break;
+                    return ServerTrack_Meta::send( $event );
                 case 'tiktok':
-                    $result = ServerTrack_TikTok::send( $event );
-                    break;
+                    return ServerTrack_TikTok::send( $event );
                 case 'google':
-                    $result = ServerTrack_Google::send( $event );
-                    break;
+                    return ServerTrack_Google::send( $event );
                 default:
                     return [ 'status' => 'error', 'message' => 'Unknown platform: ' . $platform ];
             }
-            return $result;
         } catch ( \Throwable $e ) {
             return [ 'status' => 'error', 'message' => $e->getMessage() ];
         }
