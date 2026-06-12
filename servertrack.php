@@ -292,8 +292,21 @@ function servertrack_register_defaults(): void {
         'servertrack_source_subscriptions_enabled'            => 0,
     ];
 
+    global $wpdb;
+    $keys = array_keys( $defaults );
+    $placeholders = implode( ',', array_fill( 0, count( $keys ), '%s' ) );
+
+    // Fetch all existing options in one query
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+    $existing = $wpdb->get_col( $wpdb->prepare(
+        "SELECT option_name FROM {$wpdb->options} WHERE option_name IN ($placeholders)",
+        ...$keys
+    ) );
+
+    $existing = array_flip( (array) $existing );
+
     foreach ( $defaults as $key => $value ) {
-        if ( false === get_option( $key ) ) {
+        if ( ! isset( $existing[ $key ] ) ) {
             add_option( $key, $value, '', 'no' );
         }
     }
