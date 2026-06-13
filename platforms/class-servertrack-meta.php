@@ -58,21 +58,10 @@ class ServerTrack_Meta {
             return [ 'status' => 'skipped', 'http_code' => 0 ];
         }
 
-        $pixels_json = get_option( 'servertrack_meta_pixels_array', '' );
-        $pixels = [];
-        if ( ! empty( $pixels_json ) ) {
-            $pixels = json_decode( $pixels_json, true );
-        }
+        $pixel_id     = trim( (string) get_option( 'servertrack_meta_pixel_id', '' ) );
+        $access_token = trim( (string) get_option( 'servertrack_meta_access_token', '' ) );
 
-        if ( empty( $pixels ) ) {
-            $pixel_id     = trim( (string) get_option( 'servertrack_meta_pixel_id', '' ) );
-            $access_token = trim( (string) get_option( 'servertrack_meta_access_token', '' ) );
-            if ( '' !== $pixel_id && '' !== $access_token ) {
-                $pixels[] = [ 'pixel_id' => $pixel_id, 'token' => $access_token ];
-            }
-        }
-
-        if ( empty( $pixels ) ) {
+        if ( '' === $pixel_id || '' === $access_token ) {
             return [
                 'status'  => 'error',
                 'message' => 'Meta Pixel ID or Access Token not configured. Please save your credentials in the Meta CAPI tab first.',
@@ -106,16 +95,7 @@ class ServerTrack_Meta {
         ];
         foreach ( $raw_map as $src => $dest ) {
             if ( ! empty( $event->user_data[ $src ] ) ) {
-                if ( $src === 'fbc' ) {
-                    if ( ! empty( $event->user_data['fbc'] ) && strpos( $event->user_data['fbc'], 'fb.1.' ) !== 0 ) {
-                        $ts = time() * 1000;
-                        $ud[ $dest ] = 'fb.1.' . $ts . '.' . $event->user_data['fbc'];
-                    } elseif ( ! empty( $event->user_data['fbc'] ) ) {
-                        $ud[ $dest ] = $event->user_data['fbc'];
-                    }
-                } else {
-                    $ud[ $dest ] = $event->user_data[ $src ];
-                }
+                $ud[ $dest ] = $event->user_data[ $src ];
             }
         }
 
@@ -145,94 +125,72 @@ class ServerTrack_Meta {
             'custom_data'      => $event->custom_data,
         ];
 
+        $body = [
+            'data'         => [ $event_payload ],
+            'access_token' => $access_token,
+        ];
+
         // Attach test_event_code if present
         $test_code = ! empty( $event->custom_data['_test_event_code'] )
             ? $event->custom_data['_test_event_code']
             : trim( (string) get_option( 'servertrack_meta_test_event_code', '' ) );
 
         if ( '' !== $test_code ) {
+            $body['test_event_code'] = $test_code;
             unset( $event_payload['custom_data']['_test_event_code'] );
         }
 
-        $results = [];
-
-        foreach ( $pixels as $pixel_config ) {
-            $pixel_id     = $pixel_config['pixel_id'] ?? '';
-            $access_token = $pixel_config['token'] ?? '';
-
-            if ( '' === $pixel_id || '' === $access_token ) continue;
-
-            $body = [
-                'data'         => [ $event_payload ],
-                'access_token' => $access_token,
-            ];
-
-            if ( '' !== $test_code ) {
-                $body['test_event_code'] = $test_code;
-            }
-
-            // BUG #12 FIX: guard against wp_json_encode() returning false.
-            $json = wp_json_encode( $body );
-            if ( false === $json ) {
-                ServerTrack_Logger::log(
-                    'error', 'meta',
-                    'wp_json_encode failed — payload contains non-serialisable data.',
-                    '', $event->event_id,
-                    (int) ( $event->custom_data['order_id'] ?? 0 ),
-                    $event->event_name
-                    // arg 8 (emq) intentionally omitted — defaults to []
-                );
-                $results[] = [ 'pixel_id' => $pixel_id, 'status' => 'error', 'code' => 0, 'message' => 'JSON encode failed.' ];
-                continue;
-            }
-
-            $endpoint = sprintf( self::API_ENDPOINT, $pixel_id );
-
-            $response = wp_remote_post( $endpoint, [
-                'method'  => 'POST',
-                'timeout' => 15,
-                'headers' => [ 'Content-Type' => 'application/json' ],
-                'body'    => $json,
-            ] );
-
-            if ( is_wp_error( $response ) ) {
-                // BUG #8b FIX: removed (int) 0 as arg 8 — Logger expects array $emq.
-                ServerTrack_Logger::log(
-                    'error', 'meta',
-                    $response->get_error_message(),
-                    '', $event->event_id,
-                    (int) ( $event->custom_data['order_id'] ?? 0 ),
-                    $event->event_name
-                    // arg 8 (emq) intentionally omitted — defaults to []
-                );
-                $results[] = [ 'pixel_id' => $pixel_id, 'status' => 'error', 'code' => 0, 'message' => $response->get_error_message() ];
-                continue;
-            }
-
-            $code     = (int) wp_remote_retrieve_response_code( $response );
-            $body_raw = wp_remote_retrieve_body( $response );
-            $status   = ( $code >= 200 && $code < 300 ) ? 'success' : 'error';
-
-            // BUG #8b FIX: removed (int) $code as arg 8 — was corrupting emq log field.
+        // BUG #12 FIX: guard against wp_json_encode() returning false.
+        $json = wp_json_encode( $body );
+        if ( false === $json ) {
             ServerTrack_Logger::log(
-                $status, 'meta',
-                (string) $code,
-                $body_raw,
-                $event->event_id,
+                'error', 'meta',
+                'wp_json_encode failed — payload contains non-serialisable data.',
+                '', $event->event_id,
                 (int) ( $event->custom_data['order_id'] ?? 0 ),
                 $event->event_name
                 // arg 8 (emq) intentionally omitted — defaults to []
             );
-
-            $results[] = [ 'pixel_id' => $pixel_id, 'status' => $status, 'code' => $code, 'response' => $body_raw ];
+            return [ 'status' => 'error', 'http_code' => 0, 'message' => 'JSON encode failed.' ];
         }
 
-        $any_success = count( array_filter( $results, fn($r) => $r['status'] === 'success' ) ) > 0;
-        return [
-            'status' => $any_success ? 'success' : 'error',
-            'results' => $results,
-            'http_code' => !empty($results) ? end($results)['code'] : 0,
-            'response' => !empty($results) ? end($results)['response'] ?? '' : ''
-        ];
+        $endpoint = sprintf( self::API_ENDPOINT, $pixel_id );
+
+        $response = wp_remote_post( $endpoint, [
+            'method'  => 'POST',
+            'timeout' => 15,
+            'headers' => [ 'Content-Type' => 'application/json' ],
+            'body'    => $json,
+        ] );
+
+        if ( is_wp_error( $response ) ) {
+            // BUG #8b FIX: removed (int) 0 as arg 8 — Logger expects array $emq.
+            ServerTrack_Logger::log(
+                'error', 'meta',
+                $response->get_error_message(),
+                '', $event->event_id,
+                (int) ( $event->custom_data['order_id'] ?? 0 ),
+                $event->event_name
+                // arg 8 (emq) intentionally omitted — defaults to []
+            );
+            return [ 'status' => 'error', 'message' => $response->get_error_message(), 'http_code' => 0 ];
+        }
+
+        $code     = (int) wp_remote_retrieve_response_code( $response );
+        $body_raw = wp_remote_retrieve_body( $response );
+        $status   = ( $code >= 200 && $code < 300 ) ? 'success' : 'error';
+
+        // BUG #8b FIX: removed (int) $code as arg 8 — was corrupting emq log field.
+        ServerTrack_Logger::log(
+            $status, 'meta',
+            (string) $code,
+            $body_raw,
+            $event->event_id,
+            (int) ( $event->custom_data['order_id'] ?? 0 ),
+            $event->event_name
+            // arg 8 (emq) intentionally omitted — defaults to []
+        );
+
+        return [ 'status' => $status, 'http_code' => $code, 'response' => $body_raw ];
     }
 }

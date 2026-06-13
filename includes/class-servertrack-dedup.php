@@ -50,8 +50,6 @@ class ServerTrack_Dedup {
             return self::$hpos_enabled;
         }
 
-        self::$hpos_enabled = false;
-
         if (
             class_exists( 'Automattic\\WooCommerce\\Internal\\DataStores\\Orders\\CustomOrdersTableController' )
             && function_exists( 'wc_get_container' )
@@ -60,18 +58,12 @@ class ServerTrack_Dedup {
                 $controller = wc_get_container()->get(
                     Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController::class
                 );
-                $hpos_enabled = (bool) $controller->custom_orders_table_usage_is_enabled();
-
-                if ( $hpos_enabled ) {
-                    self::$hpos_enabled = true;
-                }
+                self::$hpos_enabled = (bool) $controller->custom_orders_table_usage_is_enabled();
             } catch ( \Exception $e ) {
-                error_log( 'ServerTrack: HPOS detection failed - ' . $e->getMessage() );
-                if ( class_exists( 'ServerTrack_Logger' ) ) {
-                    ServerTrack_Logger::error( 'HPOS detection failed', [ 'exception' => $e->getMessage() ] );
-                }
                 self::$hpos_enabled = false;
             }
+        } else {
+            self::$hpos_enabled = false;
         }
 
         return self::$hpos_enabled;
@@ -152,7 +144,7 @@ class ServerTrack_Dedup {
             return wp_generate_uuid4();
         }
 
-        $hash  = hash_hmac( 'sha256', $context_string, SECURE_AUTH_KEY, true );
+        $hash  = hash( 'sha256', $context_string . '_' . SECURE_AUTH_KEY, true );
         $bytes = substr( $hash, 0, 16 );
 
         $bytes[6] = chr( ( ord( $bytes[6] ) & 0x0f ) | 0x40 );
@@ -233,7 +225,10 @@ class ServerTrack_Dedup {
             return self::was_sent( (int) $key, $platform );
         }
         // String dedup key — check per-platform option.
-        return self::exists( $key . '_' . $platform );
+        return (bool) get_option(
+            self::OPTIONS_PREFIX . sanitize_key( $key . '_' . $platform ),
+            false
+        );
     }
 
     /**
@@ -246,7 +241,11 @@ class ServerTrack_Dedup {
      * @param string $platform 'meta' | 'google' | 'tiktok'
      */
     public static function mark_string_sent( string $key, string $platform ): void {
-        self::set( $key . '_' . $platform );
+        update_option(
+            self::OPTIONS_PREFIX . sanitize_key( $key . '_' . $platform ),
+            1,
+            false
+        );
     }
 
     /**
@@ -281,34 +280,26 @@ class ServerTrack_Dedup {
     /**
      * Check whether a non-order dedup key has been marked as sent.
      *
+     * FIX (v2.3): This method was called by ServerTrack_OfflineConversion
+     * but never existed, causing a PHP fatal error and preventing the
+     * offline dedup guard from running entirely.
+     *
      * @param string $key  e.g. 'offline_123'
      * @return bool
      */
     public static function exists( string $key ): bool {
-        global $wpdb;
-        $table_name = $wpdb->prefix . 'servertrack_dedup';
-        $hashed_key = hash( 'sha256', sanitize_key( $key ) );
-        $count = $wpdb->get_var( $wpdb->prepare(
-            "SELECT COUNT(*) FROM {$table_name} WHERE dedup_key = %s",
-            $hashed_key
-        ) );
-        return $count > 0;
+        return (bool) get_option( self::OPTIONS_PREFIX . sanitize_key( $key ), false );
     }
 
     /**
      * Mark a non-order dedup key as sent.
      *
+     * FIX (v2.3): Paired with exists() — both were missing.
+     *
      * @param string $key  e.g. 'offline_123'
      */
     public static function set( string $key ): void {
-        global $wpdb;
-        $table_name = $wpdb->prefix . 'servertrack_dedup';
-        $hashed_key = hash( 'sha256', sanitize_key( $key ) );
-        $wpdb->query( $wpdb->prepare(
-            "INSERT IGNORE INTO {$table_name} (dedup_key, created_at) VALUES (%s, %s)",
-            $hashed_key,
-            current_time( 'mysql' )
-        ) );
+        update_option( self::OPTIONS_PREFIX . sanitize_key( $key ), 1, false );
     }
 
     /**
@@ -317,12 +308,6 @@ class ServerTrack_Dedup {
      * @param string $key  e.g. 'offline_123'
      */
     public static function reset_event_key( string $key ): void {
-        global $wpdb;
-        $table_name = $wpdb->prefix . 'servertrack_dedup';
-        $hashed_key = hash( 'sha256', sanitize_key( $key ) );
-        $wpdb->query( $wpdb->prepare(
-            "DELETE FROM {$table_name} WHERE dedup_key = %s",
-            $hashed_key
-        ) );
+        delete_option( self::OPTIONS_PREFIX . sanitize_key( $key ) );
     }
 }

@@ -25,31 +25,6 @@ class ServerTrack_Hasher {
         return hash( 'sha256', $normalized );
     }
 
-    public static function hash_name( string $name ): string {
-        $normalized = preg_replace( '/[^a-z0-9]/', '', strtolower( trim( $name ) ) );
-        return hash( 'sha256', $normalized );
-    }
-
-    public static function hash_city( string $city ): string {
-        $normalized = preg_replace( '/[^a-z0-9]/', '', strtolower( trim( $city ) ) );
-        return hash( 'sha256', $normalized );
-    }
-
-    public static function hash_state( string $state ): string {
-        $normalized = preg_replace( '/[^a-z0-9]/', '', strtolower( trim( $state ) ) );
-        return hash( 'sha256', $normalized );
-    }
-
-    public static function hash_zip( string $zip ): string {
-        $normalized = preg_replace( '/[\s\-]/', '', strtolower( trim( $zip ) ) );
-        return hash( 'sha256', $normalized );
-    }
-
-    public static function hash_country( string $country ): string {
-        $normalized = preg_replace( '/[^a-z]/', '', strtolower( trim( $country ) ) );
-        return hash( 'sha256', $normalized );
-    }
-
     /**
      * Hash a phone number after normalising it to E.164 format.
      *
@@ -72,20 +47,20 @@ class ServerTrack_Hasher {
         }
 
         if ( '' !== $country_code ) {
-            $cc = ltrim( preg_replace( '/[^0-9]/', '', $country_code ), '0' );
+            $cc = preg_replace( '/[^0-9]/', '', $country_code );
 
             if ( '' !== $cc ) {
-                if ( strpos( ltrim( $digits, '0' ), $cc ) === 0 ) {
-                    $e164 = ltrim( $digits, '0' );
+                if ( strpos( $digits, $cc ) === 0 ) {
+                    $e164 = $digits;
                 } else {
                     $national = ltrim( $digits, '0' );
                     $e164     = $cc . $national;
                 }
             } else {
-                $e164 = ltrim( $digits, '0' );
+                $e164 = $digits;
             }
         } else {
-            $e164 = ltrim( $digits, '0' );
+            $e164 = $digits;
         }
 
         return hash( 'sha256', $e164 );

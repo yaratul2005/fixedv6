@@ -43,10 +43,8 @@ function current_user_can( string $cap ): bool { return true; }
 function check_ajax_referer(): void {}
 function wp_send_json_success( $data = null ): void {}
 function wp_send_json_error( $data = null ): void {}
-if (!function_exists('gmdate')) {
-    function gmdate( string $format, $timestamp = null ): string {
-        return \date( $format, $timestamp ?? time() );
-    }
+function gmdate( string $format, $timestamp = null ): string {
+    return \date( $format, $timestamp ?? time() );
 }
 
 // ── WooCommerce stubs ───────────────────────────────────────────────────
@@ -117,12 +115,6 @@ class ServerTrack_Dedup {
     public static function mark_as_sent( $key, string $platform ): void {
         self::$sent[ "{$key}:{$platform}" ] = true;
     }
-    public static function mark_string_sent( $key, string $platform ): void {
-        self::$sent[ "{$key}:{$platform}" ] = true;
-    }
-    public static function mark_sent( $key, string $platform ): void {
-        self::$sent[ "{$key}:{$platform}" ] = true;
-    }
 
     public static function reset(): void { self::$sent = []; }
 }
@@ -136,8 +128,6 @@ class ServerTrack_Identity {
     }
     public static function from_current_user(): array { return []; }
     public static function from_user_id( int $id ): array { return []; }
-    public static function get_external_id_for_user( $id ): string { return 'ext_' . $id; }
-    public static function get_external_id_for_order( $order ): string { return 'ext_order_' . $order->get_id(); }
 }
 
 /**
@@ -183,15 +173,6 @@ class ServerTrack_Event {
         $this->custom_data = $data;
         return $this;
     }
-
-    public function to_array(): array {
-        return [
-            'event_name'  => $this->event_name,
-            'event_id'    => $this->event_id,
-            'user_data'   => $this->user_data,
-            'custom_data' => $this->custom_data,
-        ];
-    }
 }
 
 /**
@@ -234,34 +215,3 @@ class ServerTrack_Google { public static function send( $e ): array { return [ '
 
 require_once __DIR__ . '/../includes/class-servertrack-retry.php';
 require_once __DIR__ . '/../sources/class-servertrack-source-woocommerce.php';
-
-function get_transient($key) {
-    return $GLOBALS['_st_transients'][$key] ?? false;
-}
-function set_transient($key, $val, $exp = 0) {
-    $GLOBALS['_st_transients'][$key] = $val;
-    return true;
-}
-function delete_transient($key) {
-    unset($GLOBALS['_st_transients'][$key]);
-    return true;
-}
-function wp_generate_uuid4() {
-    return 'uuid-4-mock';
-}
-
-class WCMock {
-    public $session;
-    public function __construct() {
-        $this->session = new WCSessionMock();
-    }
-}
-class WCSessionMock {
-    public function get_customer_id() { return 'cust_123'; }
-}
-
-function WC() {
-    global $wc_mock;
-    if (!$wc_mock) $wc_mock = new WCMock();
-    return $wc_mock;
-}

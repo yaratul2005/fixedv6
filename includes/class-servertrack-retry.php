@@ -115,17 +115,10 @@ class ServerTrack_Retry {
      * Called by WP-Cron every 5 minutes.
      */
     public static function process(): void {
-        $lock_key = 'servertrack_retry_processing_lock';
-        if ( get_transient( $lock_key ) ) {
+        $queue = get_option( self::QUEUE_OPTION, [] );
+        if ( empty( $queue ) ) {
             return;
         }
-        set_transient( $lock_key, true, 30 );
-
-        try {
-            $queue = get_option( self::QUEUE_OPTION, [] );
-            if ( empty( $queue ) ) {
-                return;
-            }
 
         $now     = time();
         $updated = false;
@@ -176,7 +169,7 @@ class ServerTrack_Retry {
 
                 if ( '' !== $dedup_key ) {
                     // Non-order event: use the options-based string-key dedup API.
-                    ServerTrack_Dedup::mark_string_sent( $dedup_key, $platform );
+                    ServerTrack_Dedup::set( $dedup_key );
                 } elseif ( $order_id > 0 ) {
                     // Standard WooCommerce order: use the order-meta dedup API.
                     ServerTrack_Dedup::mark_as_sent( $order_id, $platform );
@@ -195,10 +188,7 @@ class ServerTrack_Retry {
         }
 
         if ( $updated ) {
-                update_option( self::QUEUE_OPTION, $queue, false );
-            }
-        } finally {
-            delete_transient( $lock_key );
+            update_option( self::QUEUE_OPTION, $queue, false );
         }
     }
 
@@ -257,11 +247,10 @@ class ServerTrack_Retry {
      */
     public static function event_to_args( ServerTrack_Event $event ): array {
         $args = [
-            'event_id'         => $event->event_id,
-            'event_name'       => $event->event_name,
-            'user_data'        => $event->user_data,
-            'custom_data'      => $event->custom_data,
-            'event_source_url' => isset($event->event_source_url) ? $event->event_source_url : (property_exists($event, 'event_source_url') ? $event->event_source_url : ''),
+            'event_id'    => $event->event_id,
+            'event_name'  => $event->event_name,
+            'user_data'   => $event->user_data,
+            'custom_data' => $event->custom_data,
         ];
 
         // BUG-08 FIX: carry dedup_key so process() can mark non-order events as sent.

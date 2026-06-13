@@ -60,7 +60,7 @@ class WooCommerceWishlistTest extends TestCase {
     public function test_bug10_no_dispatch_when_all_platforms_sent(): void {
         // Simulate both Meta and TikTok already sent
         // uid_part = 0 (no user, no session in test env)
-        $key = 'wishlist_yith_cust_123_55';
+        $key = 'wishlist_yith_0_55';
         ServerTrack_Dedup::mark_as_sent( $key, 'meta' );
         ServerTrack_Dedup::mark_as_sent( $key, 'tiktok' );
 
@@ -72,7 +72,7 @@ class WooCommerceWishlistTest extends TestCase {
 
     public function test_bug10_fires_to_pending_platform_only(): void {
         // Only Meta already sent — original BUG-10 would have fired to both
-        $key = 'wishlist_yith_cust_123_55';
+        $key = 'wishlist_yith_0_55';
         ServerTrack_Dedup::mark_as_sent( $key, 'meta' );
 
         ServerTrack_Source_WooCommerce::handle_add_to_wishlist( 55, 1 );

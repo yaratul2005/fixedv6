@@ -97,7 +97,6 @@ class ServerTrack_Source_WooCommerce {
         add_action( 'woocommerce_order_status_processing',  [ self::class, 'handle_purchase' ],              10, 1 );
         add_action( 'woocommerce_add_to_cart',              [ self::class, 'handle_add_to_cart' ],           10, 6 );
         add_action( 'woocommerce_before_checkout_form',     [ self::class, 'handle_initiate_checkout' ],     10    );
-        add_action( 'wp', [ 'ServerTrack_Consent', 'capture_snapshot' ] );
         add_action( 'woocommerce_checkout_order_processed', [ 'ServerTrack_Consent', 'capture_for_order' ],  9, 1 );
         add_action( 'woocommerce_checkout_order_processed', [ self::class, 'handle_add_payment_info' ],      10, 1 );
         add_action( 'woocommerce_created_customer',         [ self::class, 'handle_complete_registration' ], 10, 1 );
@@ -293,40 +292,6 @@ class ServerTrack_Source_WooCommerce {
     // EXISTING HANDLERS (v3.0 – v3.2, with BUG-11 and BUG-12 fixes)
     // ══════════════════════════════════════════════════════════════════════
 
-        /**
-     * Manually fires a Purchase event for a given order, bypassing automatic suppressions.
-     */
-    public static function fire_manual_purchase( int $order_id ): array {
-        $order = wc_get_order( $order_id );
-        if ( ! $order ) {
-            return [ 'success' => false, 'message' => 'Invalid order.' ];
-        }
-
-        // Use a unique suffix for manual events so it doesn't get blocked by standard dedup if it was somehow triggered
-        $event_id    = ServerTrack_Hasher::event_id( 'Purchase', $order_id . '_manual' );
-
-        if ( ServerTrack_Dedup::already_sent( $event_id, 'meta' )
-          && ServerTrack_Dedup::already_sent( $event_id, 'tiktok' )
-          && ServerTrack_Dedup::already_sent( $event_id, 'google' ) ) {
-            return [ 'success' => false, 'message' => 'Manual Purchase event has already been sent.' ];
-        }
-
-        $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ];
-        $custom_data = ServerTrack_Catalog::from_order( $order ) ?: [];
-
-        $event       = ( new ServerTrack_Event( 'Purchase', $event_id ) )
-            ->set_user_data( $user_data )
-            ->set_custom_data( $custom_data );
-
-        ServerTrack_Core::dispatch_to_all( $event, $event_id );
-
-        // Mark the order so we know it was manually verified and sent
-        $order->update_meta_data( '_servertrack_manual_purchase_sent', 'yes' );
-        $order->save();
-
-        return [ 'success' => true, 'message' => 'Manual Purchase event dispatched successfully.' ];
-    }
-
     public static function handle_purchase( int $order_id ): void {
         $order = wc_get_order( $order_id );
         if ( ! $order ) return;
@@ -336,7 +301,7 @@ class ServerTrack_Source_WooCommerce {
             return;
         }
         $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ];
-        $custom_data = ServerTrack_Catalog::from_order( $order ) ?: [];
+        $custom_data = ServerTrack_Catalog::from_order( $order );
         $event_id    = ServerTrack_Hasher::event_id( 'Purchase', $order_id );
         $event       = ( new ServerTrack_Event( 'Purchase', $event_id ) )
             ->set_user_data( $user_data )
@@ -348,12 +313,8 @@ class ServerTrack_Source_WooCommerce {
         $order = wc_get_order( $order_id );
         if ( ! $order ) return;
         $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ];
-        $custom_data = ServerTrack_Catalog::from_order_summary( $order ) ?: [];
-        global $servertrack_page_load_id;
-        if ( empty( $servertrack_page_load_id ) ) {
-            $servertrack_page_load_id = wp_generate_uuid4();
-        }
-        $event_id    = ServerTrack_Hasher::event_id( 'ViewContent', $order_id . '_' . $servertrack_page_load_id );
+        $custom_data = ServerTrack_Catalog::from_order_summary( $order );
+        $event_id    = ServerTrack_Hasher::event_id( 'ViewContent', $order_id );
         $event       = ( new ServerTrack_Event( 'ViewContent', $event_id ) )
             ->set_user_data( $user_data )
             ->set_custom_data( $custom_data );
@@ -385,7 +346,7 @@ class ServerTrack_Source_WooCommerce {
             'currency'     => get_woocommerce_currency(),
             'num_items'    => $quantity,
         ];
-        $event_id = ServerTrack_Hasher::event_id( 'AddToCart', $cart_item_key . '_' . wp_generate_uuid4() );
+        $event_id = ServerTrack_Hasher::event_id( 'AddToCart', $cart_item_key );
         $event    = ( new ServerTrack_Event( 'AddToCart', $event_id ) )
             ->set_user_data( $user_data )
             ->set_custom_data( $custom_data );
@@ -407,12 +368,6 @@ class ServerTrack_Source_WooCommerce {
         if ( ! WC()->cart || WC()->cart->is_empty() ) return;
         $user_id     = get_current_user_id();
         $session_key = $user_id . '_' . ( WC()->session ? WC()->session->get_customer_id() : 'guest' );
-        global $servertrack_page_load_id;
-        if ( empty( $servertrack_page_load_id ) ) {
-            $servertrack_page_load_id = wp_generate_uuid4();
-        }
-        $session_key .= '_' . $servertrack_page_load_id;
-
         $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_user( get_current_user_id() ) ];
         $custom_data = ServerTrack_Catalog::from_cart();
         $event_id    = ServerTrack_Hasher::event_id( 'InitiateCheckout', $session_key );
@@ -426,12 +381,8 @@ class ServerTrack_Source_WooCommerce {
         $order = wc_get_order( $order_id );
         if ( ! $order ) return;
         $user_data   = [ 'external_id' => ServerTrack_Identity::get_external_id_for_order( $order ) ];
-        $custom_data = ServerTrack_Catalog::from_order_summary( $order ) ?: [];
-        global $servertrack_page_load_id;
-        if ( empty( $servertrack_page_load_id ) ) {
-            $servertrack_page_load_id = wp_generate_uuid4();
-        }
-        $event_id    = ServerTrack_Hasher::event_id( 'AddPaymentInfo', $order_id . '_' . $servertrack_page_load_id );
+        $custom_data = ServerTrack_Catalog::from_order_summary( $order );
+        $event_id    = ServerTrack_Hasher::event_id( 'AddPaymentInfo', $order_id );
         $event       = ( new ServerTrack_Event( 'AddPaymentInfo', $event_id ) )
             ->set_user_data( $user_data )
             ->set_custom_data( $custom_data );

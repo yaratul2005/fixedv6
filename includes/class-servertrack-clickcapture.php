@@ -197,13 +197,13 @@ class ServerTrack_ClickCapture {
     }
     if(!fbclid && !fbc && !fbp && !ttclid && !gclid) return;
     var sid = '';
-    try{ sid = document.cookie.match(/wp_woocommerce_session_([^=]+)=([^;]+)/)||[]; sid = sid[2]||''; }catch(e){ console.error('ServerTrack Cookie Parse Error:', e); }
+    try{ sid = document.cookie.match(/wp_woocommerce_session_([^=]+)=([^;]+)/)||[]; sid = sid[2]||''; }catch(e){}
     fetch('{$endpoint}', {
         method: 'POST',
         credentials: 'same-origin',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({fbclid:fbclid,fbc:fbc,fbp:fbp,ttclid:ttclid,gclid:gclid,session_id:sid})
-    }).catch(function(e){ console.error('ServerTrack ClickCapture AJAX Error:', e); });
+    }).catch(function(){});
 })();
 JS;
         // phpcs:enable
