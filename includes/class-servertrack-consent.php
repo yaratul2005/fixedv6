@@ -93,30 +93,7 @@ class ServerTrack_Consent {
         }
 
         // ── Browser context — live cookie check ──────────────────────────
-        if ( 'cookie_yes' === $mode ) {
-            if ( isset( $_COOKIE['cookieyes-consent'] ) ) {
-                $consent_cookie = sanitize_text_field( wp_unslash( $_COOKIE['cookieyes-consent'] ) );
-                if (
-                    strpos( $consent_cookie, 'analytics:yes' )     !== false &&
-                    strpos( $consent_cookie, 'advertisement:yes' ) !== false
-                ) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        if ( 'complianz' === $mode ) {
-            $marketing_allowed  = isset( $_COOKIE['cmplz_marketing'] )  && 'allow' === sanitize_text_field( wp_unslash( $_COOKIE['cmplz_marketing'] ) );
-            $statistics_allowed = isset( $_COOKIE['cmplz_statistics'] ) && 'allow' === sanitize_text_field( wp_unslash( $_COOKIE['cmplz_statistics'] ) );
-            return $marketing_allowed && $statistics_allowed;
-        }
-
-        if ( 'manual' === $mode ) {
-            return (bool) apply_filters( 'servertrack_consent_granted', false, $platform );
-        }
-
-        return true;
+        return self::check_browser_consent( $platform );
     }
 
     /**
