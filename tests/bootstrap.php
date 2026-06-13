@@ -183,6 +183,15 @@ class ServerTrack_Event {
         $this->custom_data = $data;
         return $this;
     }
+
+    public function to_array(): array {
+        return [
+            'event_name'  => $this->event_name,
+            'event_id'    => $this->event_id,
+            'user_data'   => $this->user_data,
+            'custom_data' => $this->custom_data,
+        ];
+    }
 }
 
 /**
