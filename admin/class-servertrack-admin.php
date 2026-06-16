@@ -65,6 +65,7 @@ class ServerTrack_Admin {
         'google'  => 'servertrack_google_settings',
         'tiktok'  => 'servertrack_tiktok_settings',
         'sources' => 'servertrack_sources_settings',
+        'license' => 'servertrack_license_settings',
     ];
 
     private static function settings_url( string $tab = '', array $extra = [] ): string {
@@ -79,6 +80,12 @@ class ServerTrack_Admin {
         add_action( 'admin_init',            [ self::class, 'register_settings' ] );
         add_action( 'admin_init',            [ self::class, 'handle_oauth_callback' ] );
         add_action( 'admin_init',            [ self::class, 'handle_oauth_revoke' ] );
+        add_action( 'admin_init',            [ self::class, 'handle_license_actions' ] );
+        add_filter( 'woocommerce_admin_order_actions', [ self::class, 'add_manual_purchase_order_action' ], 10, 2 );
+        add_action( 'admin_head', [ self::class, 'add_manual_purchase_order_action_css' ] );
+        add_action( 'admin_action_servertrack_manual_purchase', [ self::class, 'handle_manual_purchase_action' ] );
+        add_action( 'add_meta_boxes', [ self::class, 'add_manual_purchase_meta_box' ] );
+        add_action( 'admin_notices', [ self::class, 'render_manual_purchase_notice' ] );
         add_action( 'admin_enqueue_scripts', [ self::class, 'enqueue_assets' ] );
         add_action( 'admin_notices',         [ self::class, 'render_health_notice' ] );
         add_action( 'wp_ajax_servertrack_test_event',          [ self::class, 'ajax_test_event' ] );
@@ -156,6 +163,13 @@ class ServerTrack_Admin {
             'servertrack_meta_pixel_id'        => [ 'type' => 'string',  'sanitize' => 'sanitize_text_field', 'default' => '' ],
             'servertrack_meta_access_token'    => [ 'type' => 'string',  'sanitize' => 'sanitize_text_field', 'default' => '' ],
             'servertrack_meta_test_event_code' => [ 'type' => 'string',  'sanitize' => 'sanitize_text_field', 'default' => '' ],
+            'servertrack_meta_am_email'   => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 1 ],
+            'servertrack_meta_am_phone'   => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 1 ],
+            'servertrack_meta_am_name'    => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 1 ],
+            'servertrack_meta_am_city'    => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 1 ],
+            'servertrack_meta_am_state'   => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 1 ],
+            'servertrack_meta_am_zip'     => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 1 ],
+            'servertrack_meta_am_country' => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 1 ],
         ];
         self::register_group( 'servertrack_meta_settings', $meta_options );
 
@@ -165,6 +179,8 @@ class ServerTrack_Admin {
             'servertrack_google_conversion_id'    => [ 'type' => 'string',  'sanitize' => 'sanitize_text_field', 'default' => '' ],
             'servertrack_google_conversion_label' => [ 'type' => 'string',  'sanitize' => 'sanitize_text_field', 'default' => '' ],
             'servertrack_google_developer_token'  => [ 'type' => 'string',  'sanitize' => 'sanitize_text_field', 'default' => '' ],
+            'servertrack_google_consent_ad_user_data' => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 1 ],
+            'servertrack_google_consent_ad_personalization' => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 1 ],
             'servertrack_google_refresh_token'    => [ 'type' => 'string',  'sanitize' => 'sanitize_text_field', 'default' => '' ],
             'servertrack_google_client_id'        => [ 'type' => 'string',  'sanitize' => 'sanitize_text_field', 'default' => '' ],
             'servertrack_google_client_secret'    => [ 'type' => 'string',  'sanitize' => 'sanitize_text_field', 'default' => '' ],
@@ -188,10 +204,16 @@ class ServerTrack_Admin {
          * C7  — servertrack_source_subscriptions_enabled was already here;
          *       a UI toggle has been added to the Sources view.
          */
+        $license_options = [
+            'servertrack_license_key' => [ 'type' => 'string', 'sanitize' => 'sanitize_text_field', 'default' => '' ],
+        ];
+        self::register_group( 'servertrack_license_settings', $license_options );
+
         $sources_options = [
             'servertrack_source_woo_enabled'              => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 1  ],
             'servertrack_source_cart_abandonment_enabled' => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 0  ],
             'servertrack_abandonment_window_minutes'      => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 60 ],
+            'servertrack_manual_purchase_enabled'         => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 0  ],
             'servertrack_source_order_status_enabled'     => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 1  ],
             'servertrack_source_wishlist_enabled'         => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 0  ],
             'servertrack_source_partial_refund_enabled'   => [ 'type' => 'integer', 'sanitize' => 'absint', 'default' => 1  ],
@@ -239,6 +261,125 @@ class ServerTrack_Admin {
         }
         wp_safe_redirect( self::settings_url( $tab, $extra ) );
         exit;
+    }
+
+            public static function add_manual_purchase_order_action( $actions, $order ) {
+        if ( ! get_option( 'servertrack_manual_purchase_enabled', 0 ) ) {
+            return $actions;
+        }
+
+        if ( $order->get_meta( '_servertrack_manual_purchase_sent' ) === 'yes' ) {
+            return $actions;
+        }
+
+        $url = wp_nonce_url( admin_url( 'admin.php?action=servertrack_manual_purchase&order_id=' . $order->get_id() ), 'servertrack_manual_purchase_' . $order->get_id() );
+
+        $actions['st_manual_purchase'] = [
+            'url'    => $url,
+            'name'   => __( 'Fire CAPI Purchase Event', 'servertrack' ),
+            'action' => 'st-manual-purchase',
+        ];
+
+        return $actions;
+    }
+
+    public static function add_manual_purchase_order_action_css() {
+        if ( ! get_option( 'servertrack_manual_purchase_enabled', 0 ) ) {
+            return;
+        }
+        echo '<style>.wc-action-button-st-manual-purchase::after { font-family: dashicons; content: "\f502"; color: #0ea5a0; }</style>';
+    }
+
+        public static function add_manual_purchase_meta_box() {
+        if ( ! get_option( 'servertrack_manual_purchase_enabled', 0 ) ) {
+            return;
+        }
+
+        $screen = class_exists( '\Automattic\WooCommerce\Internal\DataStores\Orders\CustomOrdersTableController' )
+            && function_exists('wc_get_page_screen_id')
+            ? wc_get_page_screen_id( 'shop-order' )
+            : 'shop_order';
+
+        add_meta_box(
+            'servertrack_manual_purchase',
+            __( 'ServerTrack - Purchase Event', 'servertrack' ),
+            [ self::class, 'render_manual_purchase_meta_box' ],
+            $screen,
+            'side',
+            'high'
+        );
+    }
+
+    public static function render_manual_purchase_meta_box( $post_or_order_object ) {
+        $order = ( $post_or_order_object instanceof WP_Post )
+            ? wc_get_order( $post_or_order_object->ID )
+            : $post_or_order_object;
+
+        if ( ! $order ) {
+            echo '<p>Could not load order.</p>';
+            return;
+        }
+
+        $sent = $order->get_meta( '_servertrack_manual_purchase_sent' ) === 'yes';
+        $url = wp_nonce_url( admin_url( 'admin.php?action=servertrack_manual_purchase&order_id=' . $order->get_id() ), 'servertrack_manual_purchase_' . $order->get_id() );
+
+        if ( $sent ) {
+            echo '<div style="color:#10b981; font-weight:600; padding:10px 0;"><span class="dashicons dashicons-yes-alt"></span> ' . __( 'Purchase event successfully synced.', 'servertrack' ) . '</div>';
+        } else {
+            echo '<p>' . __( 'Manual purchase mode is active. This order has not been synced to advertising platforms yet.', 'servertrack' ) . '</p>';
+            echo '<a href="' . esc_url( $url ) . '" class="button button-primary" style="width:100%; text-align:center;">' . __( 'Fire Purchase Event', 'servertrack' ) . '</a>';
+        }
+    }
+
+    public static function render_manual_purchase_notice() {
+        if ( isset( $_GET['st_manual_status'] ) && isset( $_GET['st_manual_msg'] ) ) {
+            $class = $_GET['st_manual_status'] === 'success' ? 'notice-success' : 'notice-error';
+            $message = sanitize_text_field( urldecode( $_GET['st_manual_msg'] ) );
+            printf( '<div class="notice %1$s is-dismissible"><p>%2$s</p></div>', esc_attr( $class ), esc_html( $message ) );
+        }
+    }
+
+    public static function handle_manual_purchase_action() {
+        if ( ! current_user_can( 'edit_shop_orders' ) ) {
+            wp_die( 'Unauthorized.' );
+        }
+
+        $order_id = isset( $_GET['order_id'] ) ? absint( $_GET['order_id'] ) : 0;
+        check_admin_referer( 'servertrack_manual_purchase_' . $order_id );
+
+        if ( class_exists( 'ServerTrack_Source_WooCommerce' ) ) {
+            $result = ServerTrack_Source_WooCommerce::fire_manual_purchase( $order_id );
+
+            $url = admin_url( 'edit.php?post_type=shop_order' );
+            if ( function_exists( 'wc_get_page_screen_id' ) && wc_get_page_screen_id( 'shop-order' ) ) {
+                $url = admin_url( 'admin.php?page=wc-orders' ); // HPOS
+            }
+
+            $url = add_query_arg( [
+                'st_manual_status' => $result['success'] ? 'success' : 'error',
+                'st_manual_msg'    => urlencode( $result['message'] )
+            ], $url );
+
+            wp_safe_redirect( $url );
+            die();
+        }
+    }
+
+    public static function handle_license_actions(): void {
+        if ( ! current_user_can( 'manage_options' ) ) return;
+
+        if ( isset( $_POST['st_license_action'] ) && isset( $_POST['servertrack_license_key'] ) ) {
+            $action = sanitize_text_field( wp_unslash( $_POST['st_license_action'] ) );
+            $key = sanitize_text_field( wp_unslash( $_POST['servertrack_license_key'] ) );
+
+            if ( 'activate' === $action ) {
+                $result = ServerTrack_License::activate( $key );
+                add_settings_error( 'servertrack_license_messages', 'st_license', $result['message'], $result['success'] ? 'success' : 'error' );
+            } elseif ( 'deactivate' === $action ) {
+                $result = ServerTrack_License::deactivate();
+                add_settings_error( 'servertrack_license_messages', 'st_license', $result['message'], $result['success'] ? 'success' : 'error' );
+            }
+        }
     }
 
     public static function handle_oauth_revoke(): void {
@@ -370,7 +511,14 @@ class ServerTrack_Admin {
         if ( ! current_user_can( 'manage_options' ) ) return;
 
         // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        $page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( $_GET['page'] ) ) : '';
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
         $tab = isset( $_GET['tab'] ) ? sanitize_key( wp_unslash( $_GET['tab'] ) ) : 'general';
+
+        if ( 'servertrack-sources' === $page ) {
+            $tab = 'sources';
+        }
+
         if ( ! array_key_exists( $tab, self::TAB_GROUPS ) ) {
             $tab = 'general';
         }
@@ -386,6 +534,7 @@ class ServerTrack_Admin {
                 'google'  => __( 'Google Ads', 'servertrack' ),
                 'tiktok'  => __( 'TikTok', 'servertrack' ),
                 'sources' => __( 'Event Sources', 'servertrack' ),
+                'license' => __( 'License', 'servertrack' ),
             ];
             foreach ( $tabs as $slug => $label ) :
                 $url     = esc_url( self::settings_url( $slug ) );

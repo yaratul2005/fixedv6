@@ -234,10 +234,10 @@ class ServerTrack_CLI {
             'ph'  => $phone ? ServerTrack_Hasher::hash( $phone ) : '',
             'fbc' => $fbc ?: '',
             'fbp' => $fbp ?: '',
-            'fn'  => $order->get_billing_first_name() ? ServerTrack_Hasher::hash( strtolower( $order->get_billing_first_name() ) ) : '',
-            'ln'  => $order->get_billing_last_name()  ? ServerTrack_Hasher::hash( strtolower( $order->get_billing_last_name() ) )  : '',
-            'zp'  => $order->get_billing_postcode()   ? ServerTrack_Hasher::hash( $order->get_billing_postcode() )   : '',
-            'ct'  => $order->get_billing_city()       ? ServerTrack_Hasher::hash( strtolower( $order->get_billing_city() ) )       : '',
+            'fn'  => $order->get_billing_first_name() ? ServerTrack_Hasher::hash_name( $order->get_billing_first_name() ) : '',
+            'ln'  => $order->get_billing_last_name()  ? ServerTrack_Hasher::hash_name( $order->get_billing_last_name() )  : '',
+            'zp'  => $order->get_billing_postcode()   ? ServerTrack_Hasher::hash_zip( $order->get_billing_postcode() )   : '',
+            'ct'  => $order->get_billing_city()       ? ServerTrack_Hasher::hash_city( $order->get_billing_city() )       : '',
         ] );
 
         $emq = ServerTrack_MatchQuality::score( $user_data );

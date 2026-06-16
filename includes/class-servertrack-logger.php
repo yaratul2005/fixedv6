@@ -236,6 +236,21 @@ class ServerTrack_Logger {
 			$logs = array_slice( $logs, -self::MAX_ENTRIES );
 		}
 
-		update_option( self::OPTION_KEY, $logs, false );
+		$serialized = wp_json_encode( $logs );
+		$size_mb = strlen( $serialized ) / 1024 / 1024;
+
+		if ( $size_mb > 2.0 ) {
+			self::warning(
+				'Debug log approaching MySQL size limit. Aggressive truncation applied.',
+				[ 'size_mb' => $size_mb ]
+			);
+			$logs = array_slice( $logs, -50 );
+		}
+
+		$result = update_option( self::OPTION_KEY, $logs, false );
+
+		if ( ! $result && $size_mb > 3.0 ) {
+			error_log( 'ServerTrack: Debug log update failed. Size: ' . $size_mb . 'MB. Consider clearing debug log.' );
+		}
 	}
 }

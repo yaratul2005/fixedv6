@@ -93,7 +93,40 @@ class ServerTrack_Consent {
         }
 
         // ── Browser context — live cookie check ──────────────────────────
-        return self::check_browser_consent( $platform );
+        if ( 'cookie_yes' === $mode ) {
+            if ( isset( $_COOKIE['cookieyes-consent'] ) ) {
+                $consent_cookie = sanitize_text_field( wp_unslash( $_COOKIE['cookieyes-consent'] ) );
+                if (
+                    strpos( $consent_cookie, 'analytics:yes' )     !== false &&
+                    strpos( $consent_cookie, 'advertisement:yes' ) !== false
+                ) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        if ( 'complianz' === $mode ) {
+            $marketing_allowed  = isset( $_COOKIE['cmplz_marketing'] )  && 'allow' === sanitize_text_field( wp_unslash( $_COOKIE['cmplz_marketing'] ) );
+            $statistics_allowed = isset( $_COOKIE['cmplz_statistics'] ) && 'allow' === sanitize_text_field( wp_unslash( $_COOKIE['cmplz_statistics'] ) );
+            return $marketing_allowed && $statistics_allowed;
+        }
+
+        if ( 'manual' === $mode ) {
+            $granted = apply_filters( 'servertrack_consent_granted', false, $platform );
+            if ( ! has_filter( 'servertrack_consent_granted' ) ) {
+                if ( class_exists( 'ServerTrack_Logger' ) ) {
+                    ServerTrack_Logger::warning(
+                        'Manual consent mode active but servertrack_consent_granted filter not defined. '
+                        . 'Events will be blocked. Define the filter to enable CAPI events.',
+                        [ 'platform' => $platform ]
+                    );
+                }
+            }
+            return (bool) $granted;
+        }
+
+        return true;
     }
 
     /**
@@ -101,6 +134,29 @@ class ServerTrack_Consent {
      *
      * @param int $order_id  WooCommerce order ID.
      */
+        /**
+     * Captures browser consent state into a transient for non-order events.
+     */
+    public static function capture_snapshot(): void {
+        if ( defined( 'REST_REQUEST' ) && REST_REQUEST ) return;
+        if ( is_admin() || wp_doing_cron() ) return;
+
+        $platforms = [ 'meta', 'google', 'tiktok' ];
+        $consent   = [];
+        foreach ( $platforms as $platform ) {
+            $consent[ $platform ] = self::check_browser_consent( $platform );
+        }
+
+        if ( is_user_logged_in() ) {
+            update_user_meta( get_current_user_id(), '_st_consent_snapshot', $consent );
+        } else {
+            $session_token = wp_get_session_token();
+            if ( $session_token ) {
+                set_transient( 'st_consent_' . $session_token, $consent, 24 * HOUR_IN_SECONDS );
+            }
+        }
+    }
+
     public static function capture_for_order( int $order_id ): void {
         if ( ! function_exists( 'wc_get_order' ) ) {
             return;
@@ -156,7 +212,17 @@ class ServerTrack_Consent {
         }
 
         if ( 'manual' === $mode ) {
-            return (bool) apply_filters( 'servertrack_consent_granted', false, $platform );
+            $granted = apply_filters( 'servertrack_consent_granted', false, $platform );
+            if ( ! has_filter( 'servertrack_consent_granted' ) ) {
+                if ( class_exists( 'ServerTrack_Logger' ) ) {
+                    ServerTrack_Logger::warning(
+                        'Manual consent mode active but servertrack_consent_granted filter not defined. '
+                        . 'Events will be blocked. Define the filter to enable CAPI events.',
+                        [ 'platform' => $platform ]
+                    );
+                }
+            }
+            return (bool) $granted;
         }
 
         return true;

@@ -53,7 +53,7 @@ class ServerTrack_Core {
      * @param string|int|null    $dedup_key Dedup key; defaults to event_id.
      */
     public static function dispatch_to_all( ServerTrack_Event $event, $dedup_key = null ): void {
-        self::dispatch_to_platforms( $event, [ 'meta', 'tiktok', 'google' ], $dedup_key );
+        self::dispatch_to_platforms( $event, [ 'meta', 'tiktok', 'google', 'snapchat', 'pinterest', 'linkedin' ], $dedup_key );
     }
 
     /**
@@ -74,38 +74,6 @@ class ServerTrack_Core {
     ): void {
         $key = (string) ( $dedup_key ?? $event->event_id );
 
-        foreach ( $platforms as $platform ) {
-            // Skip if already sent to this platform.
-            if ( ServerTrack_Dedup::already_sent( $key, $platform ) ) {
-                continue;
-            }
-
-            $result = [ 'status' => 'skipped' ];
-
-            switch ( $platform ) {
-                case 'meta':
-                    if ( get_option( 'servertrack_meta_enabled', 0 ) ) {
-                        $result = ServerTrack_Meta::send( $event );
-                    }
-                    break;
-
-                case 'tiktok':
-                    if ( get_option( 'servertrack_tiktok_enabled', 0 ) ) {
-                        $result = ServerTrack_TikTok::send( $event );
-                    }
-                    break;
-
-                case 'google':
-                    if ( get_option( 'servertrack_google_enabled', 0 ) ) {
-                        $result = ServerTrack_Google::send( $event );
-                    }
-                    break;
-            }
-
-            // Mark sent on success so retries / duplicate hooks don't re-fire.
-            if ( isset( $result['status'] ) && $result['status'] === 'success' ) {
-                ServerTrack_Dedup::mark_sent( $key, $platform );
-            }
-        }
+        ServerTrack_Dispatcher::dispatch( $event, $platforms, $key );
     }
 }

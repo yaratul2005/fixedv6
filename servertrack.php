@@ -67,8 +67,16 @@ function servertrack_load_classes(): void {
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-hasher.php';
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-event.php';
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-dedup.php';
+    require_once SERVERTRACK_DIR . 'includes/class-servertrack-dedup-engine.php';
+    require_once SERVERTRACK_DIR . 'includes/class-servertrack-enrichment.php';
+    require_once SERVERTRACK_DIR . 'includes/class-servertrack-health.php';
+    require_once SERVERTRACK_DIR . 'includes/class-servertrack-stream.php';
+    require_once SERVERTRACK_DIR . 'includes/class-servertrack-attribution.php';
+    require_once SERVERTRACK_DIR . 'includes/class-servertrack-license.php';
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-consent.php';
-    require_once SERVERTRACK_DIR . 'includes/class-servertrack-consent-v2.php';
+    require_once SERVERTRACK_DIR . 'includes/class-servertrack-cookiehelper.php';
+    require_once SERVERTRACK_DIR . 'includes/class-servertrack-proxy.php';
+
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-retry.php';
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-logger.php';
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-identity.php';
@@ -82,6 +90,7 @@ function servertrack_load_classes(): void {
     // BUG-2 FIX: custom-events was present but never loaded.
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-custom-events.php';
     // Backward-compat shim — keeps ServerTrack_Core as a safe no-op class.
+    require_once SERVERTRACK_DIR . 'includes/class-servertrack-dispatcher.php';
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-core.php';
 
     if ( defined( 'WP_CLI' ) && WP_CLI ) {
@@ -92,6 +101,9 @@ function servertrack_load_classes(): void {
     require_once SERVERTRACK_DIR . 'platforms/class-servertrack-meta.php';
     require_once SERVERTRACK_DIR . 'platforms/class-servertrack-tiktok.php';
     require_once SERVERTRACK_DIR . 'platforms/class-servertrack-google.php';
+    require_once SERVERTRACK_DIR . 'platforms/class-servertrack-snapchat.php';
+    require_once SERVERTRACK_DIR . 'platforms/class-servertrack-pinterest.php';
+    require_once SERVERTRACK_DIR . 'platforms/class-servertrack-linkedin.php';
 
     // ── WooCommerce event sources ─────────────────────────────────────────────
     // Core WooCommerce purchase/refund/view events.
@@ -136,10 +148,19 @@ function servertrack_init(): void {
     servertrack_run_upgrade();
 
     // ── Core infrastructure ───────────────────────────────────────────────────
+    ServerTrack_Dispatcher::init();
+    ServerTrack_CookieHelper::init();
+    ServerTrack_Proxy::init();
     ServerTrack_Identity::init();
     ServerTrack_ClickCapture::init();
     ServerTrack_OfflineConversion::init();
     ServerTrack_PixelDedup::init();
+    ServerTrack_DedupEngine::init();
+    ServerTrack_Enrichment::init();
+    ServerTrack_Health::init();
+    ServerTrack_Stream::init();
+    ServerTrack_Attribution::init();
+    ServerTrack_License::init();
     ServerTrack_LTV::init();
     ServerTrack_Catalog::init();
     ServerTrack_Webhook::init();
@@ -214,8 +235,26 @@ function servertrack_run_upgrade(): void {
     if ( version_compare( $installed, SERVERTRACK_VERSION, '>=' ) ) {
         return; // Nothing to do.
     }
+    servertrack_create_tables();
     servertrack_register_defaults();
     update_option( 'servertrack_db_version', SERVERTRACK_VERSION );
+}
+
+function servertrack_create_tables(): void {
+    global $wpdb;
+    $charset_collate = $wpdb->get_charset_collate();
+    $table_name = $wpdb->prefix . 'servertrack_dedup';
+
+    $sql = "CREATE TABLE {$table_name} (
+        dedup_key varchar(64) NOT NULL,
+        created_at datetime DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        expires_at datetime DEFAULT (DATE_ADD(CURRENT_TIMESTAMP, INTERVAL 30 DAY)) NOT NULL,
+        PRIMARY KEY  (dedup_key),
+        KEY idx_expires_at (expires_at)
+    ) $charset_collate;";
+
+    require_once( ABSPATH . 'wp-admin/includes/upgrade.php' );
+    dbDelta( $sql );
 }
 
 function servertrack_register_defaults(): void {
@@ -276,14 +315,27 @@ add_filter( 'cron_schedules', function ( array $schedules ): array {
 // ─────────────────────────────────────────────────────────────────────────────
 // Activation / deactivation
 // ─────────────────────────────────────────────────────────────────────────────
+add_action( 'servertrack_cleanup_dedup', function() {
+    global $wpdb;
+    $wpdb->query( "DELETE FROM {$wpdb->prefix}servertrack_dedup WHERE expires_at < NOW()" );
+});
+
 register_activation_hook( __FILE__, function (): void {
     servertrack_load_classes();
+    servertrack_create_tables();
     servertrack_register_defaults();
+
+    if ( ! wp_next_scheduled( 'servertrack_cleanup_dedup' ) ) {
+        wp_schedule_event( time(), 'daily', 'servertrack_cleanup_dedup' );
+    }
+
     if ( ! wp_next_scheduled( 'servertrack_process_retry_queue' ) ) {
         wp_schedule_event( time(), 'every_five_minutes', 'servertrack_process_retry_queue' );
     }
-    if ( ! wp_next_scheduled( 'servertrack_check_abandonment' ) ) {
-        wp_schedule_event( time(), 'every_five_minutes', 'servertrack_check_abandonment' );
+    if ( get_option( 'servertrack_source_cart_abandonment_enabled', 0 ) ) {
+        if ( ! wp_next_scheduled( 'servertrack_check_abandonment' ) ) {
+            wp_schedule_event( time(), 'every_five_minutes', 'servertrack_check_abandonment' );
+        }
     }
 } );
 

@@ -74,19 +74,18 @@ class ServerTrack_Frontend {
      * merging into the event's custom_data payload.
      */
     private const PII_PARAM_BLOCKLIST = [
-        'email',
-        'phone',
-        'credit_card',
-        'card_number',
-        'cvv',
-        'ssn',
-        'password',
-        'token',
-        'api_key',
-        'secret',
-        'access_token',
-        'refresh_token',
-        'authorization',
+        'email', 'phone', 'credit_card', 'card_number', 'cvv', 'ssn', 'password',
+        'token', 'api_key', 'secret', 'access_token', 'refresh_token', 'authorization',
+        'address', 'street', 'city', 'billing_address', 'shipping_address',
+        'date_of_birth', 'dob', 'birthdate', 'birth_date',
+        'driver_license', 'dl_number', 'driver_license_number',
+        'passport_number', 'passport', 'visa_number',
+        'credit_card_token', 'cc_token', 'card_token',
+        'bank_account', 'account_number', 'bank_account_number',
+        'routing_number', 'bank_routing',
+        'customer_id', 'user_id', 'account_id',
+        'transaction_id', 'order_id',
+        'auth_code', 'authorization_code',
     ];
 
     public static function init() {
@@ -101,6 +100,48 @@ class ServerTrack_Frontend {
     // ────────────────────────────────────────────────────────────────────────
 
     public static function register_rest_routes() {
+        register_rest_route( 'servertrack/v1', '/capture-clickids', [
+            'methods'  => 'POST',
+            'callback' => function( WP_REST_Request $req ) {
+                $ids = $req->get_json_params()['ids'] ?? [];
+                $ts  = (int) ( $req->get_json_params()['timestamp'] ?? time() );
+
+                if ( isset( $ids['fbclid'] ) ) {
+                    $fbc = 'fb.1.' . $ts . '.' . sanitize_text_field( $ids['fbclid'] );
+                    setcookie( '_fbc', $fbc, time() + 7776000, '/', '', true, false ); // 90 days
+                    if ( function_exists( 'WC' ) && WC()->session ) {
+                        WC()->session->set( 'st_fbc', $fbc );
+                    }
+                }
+                if ( isset( $ids['ttclid'] ) ) {
+                    setcookie( '_ttclid', sanitize_text_field( $ids['ttclid'] ), time() + 7776000, '/', '', true, false );
+                }
+                if ( isset( $ids['gclid'] ) ) {
+                    setcookie( '_gcl_aw', sanitize_text_field( $ids['gclid'] ), time() + 7776000, '/', '', true, false );
+                }
+                if ( isset( $ids['msclkid'] ) ) {
+                    setcookie( 'msclkid', sanitize_text_field( $ids['msclkid'] ), time() + 7776000, '/', '', true, false );
+                }
+                if ( isset( $ids['ScCid'] ) ) {
+                    setcookie( '_sccid', sanitize_text_field( $ids['ScCid'] ), time() + 7776000, '/', '', true, false );
+                }
+                return new WP_REST_Response( ['ok' => true] );
+            },
+            'permission_callback' => '__return_true',
+        ]);
+
+        register_rest_route( 'servertrack/v1', '/capture-pii', [
+            'methods'  => 'POST',
+            'callback' => function( WP_REST_Request $req ) {
+                $em = sanitize_text_field( $req->get_json_params()['em'] ?? '' );
+                if ( $em && function_exists( 'WC' ) && WC()->session ) {
+                    WC()->session->set( 'st_em', $em );
+                }
+                return new WP_REST_Response( ['ok' => true] );
+            },
+            'permission_callback' => '__return_true',
+        ]);
+
         register_rest_route( 'servertrack/v1', '/custom-event', [
             'methods'             => 'POST',
             'callback'            => [ self::class, 'rest_custom_event' ],
@@ -137,14 +178,21 @@ class ServerTrack_Frontend {
             );
         }
 
-        // Rate limit by IP — 10 events per minute per IP
-        $ip         = self::get_request_ip();
-        $rate_key   = 'st_rl_' . md5( $ip );
-        $rate_count = (int) get_transient( $rate_key );
-        if ( $rate_count >= 10 ) {
+        $ip = self::get_request_ip();
+        $ua = isset( $_SERVER['HTTP_USER_AGENT'] ) ? wp_hash( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : 'no-ua';
+        $rate_key = 'st_rl_' . md5( $ip . $ua );
+
+        $rate_count = get_transient( $rate_key ) ?: [ 'tokens' => 10, 'last_refill' => time() ];
+        $now = time();
+        $elapsed = $now - $rate_count['last_refill'];
+        $refilled = min( 10, $rate_count['tokens'] + floor( $elapsed / 6 ) );
+
+        if ( $refilled <= 0 ) {
             return new WP_Error( 'rate_limit', 'Rate limit exceeded', [ 'status' => 429 ] );
         }
-        set_transient( $rate_key, $rate_count + 1, MINUTE_IN_SECONDS );
+
+        $rate_count = [ 'tokens' => $refilled - 1, 'last_refill' => $now ];
+        set_transient( $rate_key, $rate_count, MINUTE_IN_SECONDS );
 
         $event_id = $request->get_param( 'event_id' ) ?: ServerTrack_Dedup::generate_event_id( $event_name . '_rest_' . time() );
         $params   = (array) ( $request->get_param( 'params' ) ?: [] );
@@ -154,14 +202,24 @@ class ServerTrack_Frontend {
         $ttclid   = $request->get_param( 'ttclid' ) ?: '';
 
         // Sanitise params array values recursively
-        array_walk_recursive( $params, function( &$v ) { $v = sanitize_text_field( (string) $v ); } );
+        array_walk_recursive( $params, function( &$v ) {
+            $v = sanitize_text_field( (string) $v );
+            if ( preg_match( '/^\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}/', $v ) ) {
+                $v = 'REDACTED_CREDIT_CARD';
+            }
+            if ( preg_match( '/^\d{3}-\d{2}-\d{4}/', $v ) ) {
+                $v = 'REDACTED_SSN';
+            }
+        });
 
         // BUG-M4 fix: strip PII fields before merging into custom_data / logs.
         // Developers may accidentally pass user data (email, phone, etc.) in
         // the params object — remove them defensively to prevent plaintext PII
         // from appearing in the ServerTrack debug log table.
-        foreach ( self::PII_PARAM_BLOCKLIST as $pii_field ) {
-            unset( $params[ $pii_field ] );
+        foreach ( $params as $key => $value ) {
+            if ( in_array( strtolower( $key ), self::PII_PARAM_BLOCKLIST, true ) ) {
+                unset( $params[ $key ] );
+            }
         }
 
         $ua = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
@@ -286,12 +344,51 @@ class ServerTrack_Frontend {
             'rest_nonce' => wp_create_nonce( 'wp_rest' ),
         ];
 
+        // Advanced Matching (Hashed PII)
+        $user_data_for_pixel = [];
         if ( is_user_logged_in() ) {
             $user = wp_get_current_user();
-            if ( $user->user_email ) {
-                $config['user_email'] = strtolower( trim( $user->user_email ) );
-            }
+            $user_data_for_pixel = [
+                'em' => $user->user_email ? ServerTrack_Hasher::hash_email( $user->user_email ) : '',
+                'fn' => $user->first_name ? ServerTrack_Hasher::hash_name( $user->first_name ) : '',
+                'ln' => $user->last_name ? ServerTrack_Hasher::hash_name( $user->last_name ) : '',
+                'ph' => get_user_meta( $user->ID, 'billing_phone', true ) ? ServerTrack_Hasher::hash_phone( get_user_meta( $user->ID, 'billing_phone', true ) ) : '',
+                'ct' => get_user_meta( $user->ID, 'billing_city', true ) ? ServerTrack_Hasher::hash_city( get_user_meta( $user->ID, 'billing_city', true ) ) : '',
+                'st' => get_user_meta( $user->ID, 'billing_state', true ) ? ServerTrack_Hasher::hash_state( get_user_meta( $user->ID, 'billing_state', true ) ) : '',
+                'zp' => get_user_meta( $user->ID, 'billing_postcode', true ) ? ServerTrack_Hasher::hash_zip( get_user_meta( $user->ID, 'billing_postcode', true ) ) : '',
+                'country' => get_user_meta( $user->ID, 'billing_country', true ) ? ServerTrack_Hasher::hash_country( get_user_meta( $user->ID, 'billing_country', true ) ) : '',
+                'external_id' => ServerTrack_Identity::get_external_id_for_user( $user->ID ),
+            ];
+            $user_data_for_pixel = array_filter( $user_data_for_pixel );
         }
+        $config['advanced_matching'] = $user_data_for_pixel;
+
+        // Event IDs for synchronized tracking
+        $session_key = is_user_logged_in() ? get_current_user_id() . '_' : 'guest_';
+        if ( function_exists('WC') && WC()->session ) {
+             $session_key .= WC()->session->get_customer_id();
+        } else {
+             $session_key .= session_id() ?: uniqid();
+        }
+
+        // Append a unique ID per page load so that events on different pages/reloads get unique IDs
+        // and aren't improperly deduplicated against previous page views by the same user.
+        global $servertrack_page_load_id;
+        if ( empty( $servertrack_page_load_id ) ) {
+            $servertrack_page_load_id = wp_generate_uuid4();
+        }
+        $session_key .= '_' . $servertrack_page_load_id;
+
+        $config['event_ids'] = [
+            'PageView' => ServerTrack_Hasher::event_id('PageView', $session_key),
+            'ViewContent' => ServerTrack_Hasher::event_id('ViewContent', $session_key),
+            'AddToCart' => ServerTrack_Hasher::event_id('AddToCart', $session_key),
+            'InitiateCheckout' => ServerTrack_Hasher::event_id('InitiateCheckout', $session_key),
+            'AddPaymentInfo' => ServerTrack_Hasher::event_id('AddPaymentInfo', $session_key)
+        ];
+
+        $config['rest_url'] = rest_url( 'servertrack/v1/' );
+        $config['nonce'] = wp_create_nonce( 'wp_rest' );
 
         // ── Single product ────────────────────────────────────────────────────
         if ( function_exists( 'is_product' ) && is_product() ) {
@@ -388,15 +485,21 @@ class ServerTrack_Frontend {
         $now = time();
 
         // phpcs:disable WordPress.Security.NonceVerification.Recommended
+        $fingerprint = '';
+        if ( function_exists( 'WC' ) && WC()->session ) {
+            $fingerprint = md5(
+                (is_user_logged_in() ? get_current_user_id() : '')
+                . '|' . WC()->session->get_customer_id()
+                . '|' . wp_hash( $_SERVER['HTTP_USER_AGENT'] ?? '', 'auth' )
+            );
+        }
+
         if ( ! empty( $_GET['fbclid'] ) ) {
             $fbclid = sanitize_text_field( wp_unslash( $_GET['fbclid'] ) );
             $fbc    = 'fb.1.' . ( $now * 1000 ) . '.' . $fbclid;
-            if ( function_exists( 'WC' ) && WC()->session ) {
-                $session_id = (string) WC()->session->get_customer_id();
-                if ( $session_id ) {
-                    set_transient( 'servertrack_fbc_' . $session_id, $fbc, 90 * DAY_IN_SECONDS );
-                    set_transient( 'servertrack_fbclid_' . $session_id, $fbclid, 90 * DAY_IN_SECONDS );
-                }
+            if ( $fingerprint ) {
+                set_transient( 'servertrack_fbc_' . $fingerprint, $fbc, 90 * DAY_IN_SECONDS );
+                set_transient( 'servertrack_fbclid_' . $fingerprint, $fbclid, 90 * DAY_IN_SECONDS );
             }
             setcookie( '_fbc', $fbc, $now + 90 * DAY_IN_SECONDS, '/', '', is_ssl(), false );
             $_COOKIE['_fbc'] = $fbc;
@@ -404,20 +507,14 @@ class ServerTrack_Frontend {
 
         if ( ! empty( $_GET['gclid'] ) ) {
             $gclid = sanitize_text_field( wp_unslash( $_GET['gclid'] ) );
-            if ( function_exists( 'WC' ) && WC()->session ) {
-                $session_id = (string) WC()->session->get_customer_id();
-                if ( $session_id ) set_transient( 'servertrack_gclid_' . $session_id, $gclid, 90 * DAY_IN_SECONDS );
-            }
+            if ( $fingerprint ) set_transient( 'servertrack_gclid_' . $fingerprint, $gclid, 90 * DAY_IN_SECONDS );
             setcookie( '_gcl_aw', $gclid, $now + 90 * DAY_IN_SECONDS, '/', '', is_ssl(), true );
             $_COOKIE['_gcl_aw'] = $gclid;
         }
 
         if ( ! empty( $_GET['ttclid'] ) ) {
             $ttclid = sanitize_text_field( wp_unslash( $_GET['ttclid'] ) );
-            if ( function_exists( 'WC' ) && WC()->session ) {
-                $session_id = (string) WC()->session->get_customer_id();
-                if ( $session_id ) set_transient( 'servertrack_ttclid_' . $session_id, $ttclid, 7 * DAY_IN_SECONDS );
-            }
+            if ( $fingerprint ) set_transient( 'servertrack_ttclid_' . $fingerprint, $ttclid, 7 * DAY_IN_SECONDS );
             setcookie( 'ttclid', $ttclid, $now + 7 * DAY_IN_SECONDS, '/', '', is_ssl(), true );
             $_COOKIE['ttclid'] = $ttclid;
         }
@@ -425,18 +522,25 @@ class ServerTrack_Frontend {
     }
 
     public static function persist_click_ids_to_order( WC_Order $order ) {
-        $session_id = WC()->session ? (string) WC()->session->get_customer_id() : '';
+        $fingerprint = '';
+        if ( function_exists('WC') && WC()->session ) {
+            $fingerprint = md5(
+                (is_user_logged_in() ? get_current_user_id() : '')
+                . '|' . WC()->session->get_customer_id()
+                . '|' . wp_hash( $order->get_customer_user_agent(), 'auth' )
+            );
+        }
 
         $fbc = '';
         if ( ! empty( $_COOKIE['_fbc'] ) ) { // phpcs:ignore
             $fbc = sanitize_text_field( wp_unslash( $_COOKIE['_fbc'] ) );
-        } elseif ( $session_id ) {
-            $fbc = (string) get_transient( 'servertrack_fbc_' . $session_id );
+        } elseif ( $fingerprint ) {
+            $fbc = (string) get_transient( 'servertrack_fbc_' . $fingerprint );
         }
         if ( $fbc ) $order->update_meta_data( '_servertrack_fbc', $fbc );
 
-        if ( $session_id ) {
-            $fbclid = (string) get_transient( 'servertrack_fbclid_' . $session_id );
+        if ( $fingerprint ) {
+            $fbclid = (string) get_transient( 'servertrack_fbclid_' . $fingerprint );
             if ( $fbclid ) $order->update_meta_data( '_servertrack_fbclid', $fbclid );
         }
 
@@ -447,16 +551,16 @@ class ServerTrack_Frontend {
         $ttclid = '';
         if ( ! empty( $_COOKIE['ttclid'] ) ) { // phpcs:ignore
             $ttclid = sanitize_text_field( wp_unslash( $_COOKIE['ttclid'] ) );
-        } elseif ( $session_id ) {
-            $ttclid = (string) get_transient( 'servertrack_ttclid_' . $session_id );
+        } elseif ( $fingerprint ) {
+            $ttclid = (string) get_transient( 'servertrack_ttclid_' . $fingerprint );
         }
         if ( $ttclid ) $order->update_meta_data( '_servertrack_ttclid', $ttclid );
 
         $gclid = '';
         if ( ! empty( $_COOKIE['_gcl_aw'] ) ) { // phpcs:ignore
             $gclid = sanitize_text_field( wp_unslash( $_COOKIE['_gcl_aw'] ) );
-        } elseif ( $session_id ) {
-            $gclid = (string) get_transient( 'servertrack_gclid_' . $session_id );
+        } elseif ( $fingerprint ) {
+            $gclid = (string) get_transient( 'servertrack_gclid_' . $fingerprint );
         }
         if ( $gclid ) $order->update_meta_data( '_servertrack_gclid', $gclid );
 

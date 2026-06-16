@@ -40,6 +40,51 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <p class="description"><?php esc_html_e( 'Generate from Meta Events Manager → Settings → System User Token.', 'servertrack' ); ?></p>
         </td>
     </tr>
+    <!-- Advanced Matching -->
+    <tr>
+        <th scope="row"><label><?php esc_html_e( 'Advanced Matching PII', 'servertrack' ); ?></label></th>
+        <td>
+            <fieldset>
+                <legend class="screen-reader-text"><span><?php esc_html_e( 'Advanced Matching Signals', 'servertrack' ); ?></span></legend>
+                <p class="description" style="margin-bottom:8px;"><?php esc_html_e( 'Select which customer signals to hash and send to Meta to improve match quality.', 'servertrack' ); ?></p>
+                <label>
+                    <input type="checkbox" name="servertrack_meta_am_email" value="1"
+                        <?php checked( 1, get_option( 'servertrack_meta_am_email', 1 ) ); ?>>
+                    <?php esc_html_e( 'Email', 'servertrack' ); ?>
+                </label><br>
+                <label>
+                    <input type="checkbox" name="servertrack_meta_am_phone" value="1"
+                        <?php checked( 1, get_option( 'servertrack_meta_am_phone', 1 ) ); ?>>
+                    <?php esc_html_e( 'Phone Number', 'servertrack' ); ?>
+                </label><br>
+                <label>
+                    <input type="checkbox" name="servertrack_meta_am_name" value="1"
+                        <?php checked( 1, get_option( 'servertrack_meta_am_name', 1 ) ); ?>>
+                    <?php esc_html_e( 'First & Last Name', 'servertrack' ); ?>
+                </label><br>
+                <label>
+                    <input type="checkbox" name="servertrack_meta_am_city" value="1"
+                        <?php checked( 1, get_option( 'servertrack_meta_am_city', 1 ) ); ?>>
+                    <?php esc_html_e( 'City', 'servertrack' ); ?>
+                </label><br>
+                <label>
+                    <input type="checkbox" name="servertrack_meta_am_state" value="1"
+                        <?php checked( 1, get_option( 'servertrack_meta_am_state', 1 ) ); ?>>
+                    <?php esc_html_e( 'State / Province', 'servertrack' ); ?>
+                </label><br>
+                <label>
+                    <input type="checkbox" name="servertrack_meta_am_zip" value="1"
+                        <?php checked( 1, get_option( 'servertrack_meta_am_zip', 1 ) ); ?>>
+                    <?php esc_html_e( 'ZIP / Postal Code', 'servertrack' ); ?>
+                </label><br>
+                <label>
+                    <input type="checkbox" name="servertrack_meta_am_country" value="1"
+                        <?php checked( 1, get_option( 'servertrack_meta_am_country', 1 ) ); ?>>
+                    <?php esc_html_e( 'Country', 'servertrack' ); ?>
+                </label>
+            </fieldset>
+        </td>
+    </tr>
     <tr>
         <th scope="row"><label for="servertrack_meta_test_event_code"><?php esc_html_e( 'Test Event Code', 'servertrack' ); ?></label></th>
         <td>

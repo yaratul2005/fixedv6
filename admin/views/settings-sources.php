@@ -28,6 +28,25 @@ if ( ! defined( 'ABSPATH' ) ) exit;
         </td>
     </tr>
 
+    <!-- Manual Purchase Verification -->
+    <tr style="background:#f0f8ff;">
+        <th scope="row">
+            <?php esc_html_e( 'Manual Purchase Verification', 'servertrack' ); ?>
+        </th>
+        <td>
+            <label class="st-toggle">
+                <input type="checkbox" name="servertrack_manual_purchase_enabled" value="1"
+                    <?php checked( 1, get_option( 'servertrack_manual_purchase_enabled', 0 ) ); ?> />
+                <span class="st-toggle-slider"></span>
+            </label>
+            <span class="st-toggle-label"><?php esc_html_e( 'Enable manual Purchase event firing', 'servertrack' ); ?></span>
+
+            <p class="description">
+                <?php esc_html_e( 'When enabled, automatic Purchase events on the Thank You page are disabled. You must manually fire the Purchase event from the WooCommerce Orders page after verifying the order is legitimate.', 'servertrack' ); ?>
+            </p>
+        </td>
+    </tr>
+
     <!-- Cart Abandonment (C3: key corrected to _cart_abandonment_enabled) -->
     <tr>
         <th scope="row"><?php esc_html_e( 'Cart Abandonment', 'servertrack' ); ?></th>
@@ -40,6 +59,11 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <p class="description">
                 <?php esc_html_e( 'Requires WooCommerce. Sends InitiateCheckout (Meta/TikTok) and begin_checkout (Google) when a cart is abandoned.', 'servertrack' ); ?>
             </p>
+            <div style="margin-top: 10px;">
+                <strong>Event Mapping:</strong><br>
+                <span class="st-badge meta">Meta</span> <span class="st-badge tiktok">TikTok</span> <span class="st-badge google">Google</span> <br>
+                <small>Fires: InitiateCheckout (Meta/TikTok), begin_checkout (Google)</small>
+            </div>
             <br />
             <label>
                 <?php esc_html_e( 'Abandonment window (minutes):', 'servertrack' ); ?>
@@ -66,6 +90,11 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <p class="description">
                 <?php esc_html_e( 'Fires server-side Lead / Contact / SubmitForm events when an order transitions to on-hold, failed, or cancelled status.', 'servertrack' ); ?>
             </p>
+            <div style="margin-top: 10px;">
+                <strong>Event Mapping:</strong><br>
+                <span class="st-badge meta">Meta</span> <span class="st-badge tiktok">TikTok</span> <span class="st-badge google">Google</span> <br>
+                <small>Fires: Lead (on-hold), Contact (failed), SubmitForm (cancelled)</small>
+            </div>
         </td>
     </tr>
 
@@ -84,6 +113,11 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <p class="description">
                 <?php esc_html_e( 'Requires YITH WooCommerce Wishlist or TI WooCommerce Wishlist plugin.', 'servertrack' ); ?>
             </p>
+            <div style="margin-top: 10px;">
+                <strong>Event Mapping:</strong><br>
+                <span class="st-badge meta">Meta</span> <span class="st-badge tiktok">TikTok</span> <br>
+                <small>Fires: AddToWishlist</small>
+            </div>
         </td>
     </tr>
 
@@ -102,6 +136,11 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <p class="description">
                 <?php esc_html_e( 'Sends a Purchase event with a negative value equal to the exact partial refund amount.', 'servertrack' ); ?>
             </p>
+            <div style="margin-top: 10px;">
+                <strong>Event Mapping:</strong><br>
+                <span class="st-badge meta">Meta</span> <span class="st-badge tiktok">TikTok</span> <span class="st-badge google">Google</span> <br>
+                <small>Fires: Purchase (Negative Value)</small>
+            </div>
         </td>
     </tr>
 
@@ -114,6 +153,11 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                     <?php checked( 1, get_option( 'servertrack_source_cf7_enabled', 0 ) ); ?> />
                 <?php esc_html_e( 'Enable Contact Form 7 tracking (Lead event on form submit)', 'servertrack' ); ?>
             </label>
+            <div style="margin-top: 10px;">
+                <strong>Event Mapping:</strong><br>
+                <span class="st-badge meta">Meta</span> <span class="st-badge tiktok">TikTok</span> <span class="st-badge google">Google</span> <br>
+                <small>Fires: Lead</small>
+            </div>
         </td>
     </tr>
 
@@ -139,6 +183,11 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                 <?php esc_html_e( 'Enable WooCommerce Subscriptions tracking (renewal, cancellation, suspension events)', 'servertrack' ); ?>
             </label>
             <p class="description"><?php esc_html_e( 'Requires WooCommerce Subscriptions plugin.', 'servertrack' ); ?></p>
+            <div style="margin-top: 10px;">
+                <strong>Event Mapping:</strong><br>
+                <span class="st-badge meta">Meta</span> <span class="st-badge tiktok">TikTok</span> <span class="st-badge google">Google</span> <br>
+                <small>Fires: Renewal, SubscriptionCancelled, SubscriptionPaused</small>
+            </div>
         </td>
     </tr>
 
