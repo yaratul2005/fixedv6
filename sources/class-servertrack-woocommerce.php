@@ -213,7 +213,7 @@ class ServerTrack_WooCommerce {
             } else {
                 $e = ( new ServerTrack_Event( 'Purchase', $event_id ) )->set_user_data( $user_data )->set_custom_data( $custom_data );
                 $r = ServerTrack_Meta::send( $e );
-                if ( ( $r['status'] ?? '' ) === 'success' ) ServerTrack_Dedup::mark_as_sent( $order_id, 'meta' );
+                if ( ( $r['status'] ?? '' ) === 'success' ) ServerTrack_Dedup::mark_as_sent( $order_id, 'meta', false );
                 else ServerTrack_Retry::maybe_queue( 'meta', $r, ServerTrack_Retry::event_to_args( $e ) );
                 ServerTrack_Logger::log( $r['status'] ?? 'error', 'meta', 'Purchase #' . $order_id . ' via ' . $trigger, '', $event_id, $order_id, 'Purchase', $emq );
             }
@@ -227,7 +227,7 @@ class ServerTrack_WooCommerce {
             } else {
                 $e = ( new ServerTrack_Event( 'Purchase', $event_id ) )->set_user_data( $user_data )->set_custom_data( $custom_data );
                 $r = ServerTrack_TikTok::send( $e );
-                if ( ( $r['status'] ?? '' ) === 'success' ) ServerTrack_Dedup::mark_as_sent( $order_id, 'tiktok' );
+                if ( ( $r['status'] ?? '' ) === 'success' ) ServerTrack_Dedup::mark_as_sent( $order_id, 'tiktok', false );
                 else ServerTrack_Retry::maybe_queue( 'tiktok', $r, ServerTrack_Retry::event_to_args( $e ) );
                 ServerTrack_Logger::log( $r['status'] ?? 'error', 'tiktok', 'Purchase #' . $order_id . ' via ' . $trigger, '', $event_id, $order_id, 'Purchase', $emq );
             }
@@ -241,10 +241,15 @@ class ServerTrack_WooCommerce {
             } else {
                 $e = ( new ServerTrack_Event( 'Purchase', $event_id ) )->set_user_data( $user_data )->set_custom_data( $custom_data );
                 $r = ServerTrack_Google::send( $e );
-                if ( ( $r['status'] ?? '' ) === 'success' ) ServerTrack_Dedup::mark_as_sent( $order_id, 'google' );
+                if ( ( $r['status'] ?? '' ) === 'success' ) ServerTrack_Dedup::mark_as_sent( $order_id, 'google', false );
                 else ServerTrack_Retry::maybe_queue( 'google', $r, ServerTrack_Retry::event_to_args( $e ) );
                 ServerTrack_Logger::log( $r['status'] ?? 'error', 'google', 'Purchase #' . $order_id . ' via ' . $trigger, '', $event_id, $order_id, 'Purchase', $emq );
             }
+        }
+
+        // Save HPOS order once at the end of the method to avoid N+1 query overhead.
+        if ( is_callable( [ $order, 'save' ] ) && class_exists( '\Automattic\WooCommerce\Utilities\OrderUtil' ) && \Automattic\WooCommerce\Utilities\OrderUtil::custom_orders_table_usage_is_enabled() ) {
+            $order->save();
         }
     }
 

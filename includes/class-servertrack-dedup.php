@@ -104,7 +104,7 @@ class ServerTrack_Dedup {
     /**
      * Only persists if the value has changed — avoids redundant HPOS save() calls.
      */
-    private static function update_meta( int $order_id, string $key, $value ): void {
+    private static function update_meta( int $order_id, string $key, $value, bool $save = true ): void {
         if ( self::is_hpos() ) {
             $order = self::get_order( $order_id );
             if ( ! $order ) {
@@ -115,7 +115,9 @@ class ServerTrack_Dedup {
                 return;
             }
             $order->update_meta_data( $key, $value );
-            $order->save();
+            if ( $save ) {
+                $order->save();
+            }
             return;
         }
 
@@ -184,7 +186,7 @@ class ServerTrack_Dedup {
      *
      * @param string $platform  'meta' | 'google' | 'tiktok'
      */
-    public static function mark_as_sent( int $order_id, string $platform ): void {
+    public static function mark_as_sent( int $order_id, string $platform, bool $save = true ): void {
         $sent = self::get_meta( $order_id, '_servertrack_server_sent' );
         if ( ! is_array( $sent ) ) {
             $sent = [];
@@ -193,7 +195,7 @@ class ServerTrack_Dedup {
             return;
         }
         $sent[] = $platform;
-        self::update_meta( $order_id, '_servertrack_server_sent', $sent );
+        self::update_meta( $order_id, '_servertrack_server_sent', $sent, $save );
     }
 
     /**
