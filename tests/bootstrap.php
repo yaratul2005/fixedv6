@@ -124,6 +124,10 @@ class ServerTrack_Dedup {
         self::$sent[ "{$key}:{$platform}" ] = true;
     }
 
+    public static function generate_event_id( $seed ) {
+        return md5( $seed );
+    }
+
     public static function reset(): void { self::$sent = []; }
 }
 
@@ -151,14 +155,6 @@ class ServerTrack_Catalog {
     public static function from_cart(): array { return []; }
 }
 
-/**
- * Stub hasher.
- */
-class ServerTrack_Hasher {
-    public static function event_id( string $event, $seed ): string {
-        return md5( $event . $seed );
-    }
-}
 
 /**
  * Stub event.
