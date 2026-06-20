@@ -34,10 +34,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *     $pending_platforms list; bails entirely if empty, dispatches only
  *     to platforms not yet sent.
  *
- *   FIX BUG-11: handle_add_to_cart() had a 3-param signature but the
- *     woocommerce_add_to_cart hook passes 6 args. Added missing params
- *     ($variation_id, $variation, $cart_item_data) to silence PHP warnings.
- *
+
  *   FIX BUG-12: handle_full_refund() only checked dedup for 'meta'.
  *     Extended check to cover 'meta', 'tiktok', 'google' before firing.
  *
@@ -95,7 +92,7 @@ class ServerTrack_Source_WooCommerce {
         add_action( 'woocommerce_payment_complete',         [ self::class, 'handle_purchase' ],              10, 1 );
         add_action( 'woocommerce_order_status_completed',   [ self::class, 'handle_purchase' ],              10, 1 );
         add_action( 'woocommerce_order_status_processing',  [ self::class, 'handle_purchase' ],              10, 1 );
-        add_action( 'woocommerce_add_to_cart',              [ self::class, 'handle_add_to_cart' ],           10, 6 );
+        add_action( 'woocommerce_add_to_cart',              [ self::class, 'handle_add_to_cart' ],           10, 3 );
         add_action( 'woocommerce_before_checkout_form',     [ self::class, 'handle_initiate_checkout' ],     10    );
         add_action( 'wp', [ 'ServerTrack_Consent', 'capture_snapshot' ] );
         add_action( 'woocommerce_checkout_order_processed', [ 'ServerTrack_Consent', 'capture_for_order' ],  9, 1 );
@@ -361,18 +358,11 @@ class ServerTrack_Source_WooCommerce {
     }
 
     /**
-     * BUG-11 (fixed in v3.3.1):
-     *   woocommerce_add_to_cart passes 6 arguments but the original handler
-     *   only declared 3 params, causing PHP to emit a warning on strict sites.
-     *   Added $variation_id, $variation, $cart_item_data (unused but declared).
      */
     public static function handle_add_to_cart(
         string $cart_item_key,
         int    $product_id,
-        int    $quantity,
-        int    $variation_id   = 0,
-        array  $variation      = [],
-        array  $cart_item_data = []
+        int    $quantity
     ): void {
         $product = wc_get_product( $product_id );
         if ( ! $product ) return;
