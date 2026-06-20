@@ -312,6 +312,8 @@ class ServerTrack_Frontend {
     // ────────────────────────────────────────────────────────────────────────
 
     public static function enqueue_pixel_script() {
+        // Only run on front end
+        if ( is_admin() ) return;
         if ( ! get_option( 'servertrack_enabled', 1 ) ) return;
 
         wp_register_script(
