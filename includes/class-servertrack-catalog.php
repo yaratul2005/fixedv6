@@ -194,7 +194,7 @@ class ServerTrack_Catalog {
 
         // Brand: support WooCommerce Brands plugin attribute 'pa_brand'
         $brand = '';
-        $brand_terms = wp_get_post_terms( $product->get_id(), 'pa_brand', [ 'fields' => 'names' ] );
+        $brand_terms = wc_get_product_terms( $product->get_id(), 'pa_brand', [ 'fields' => 'names' ] );
         if ( ! is_wp_error( $brand_terms ) && ! empty( $brand_terms ) ) {
             $brand = $brand_terms[0];
         }
