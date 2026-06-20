@@ -21,6 +21,7 @@ $is_active = ServerTrack_License::is_active();
     </div>
 
     <div class="st-settings-section-body">
+        <?php wp_nonce_field( 'servertrack_license_action', 'servertrack_license_nonce' ); ?>
         <?php if ( $is_active ) : ?>
             <div class="st-notice st-notice-success" style="margin-bottom:20px;">
                 <svg class="st-notice-icon" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>

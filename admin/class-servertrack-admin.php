@@ -250,6 +250,7 @@ class ServerTrack_Admin {
         if ( ! current_user_can( 'manage_options' ) ) {
             return;
         }
+        check_admin_referer( 'servertrack_oauth_google', 'state' );
         $code = sanitize_text_field( wp_unslash( $_GET['code'] ) );
         if ( class_exists( 'ServerTrack_Google_OAuth' ) ) {
             $result = ServerTrack_Google_OAuth::exchange_code( $code );
@@ -369,6 +370,7 @@ class ServerTrack_Admin {
         if ( ! current_user_can( 'manage_options' ) ) return;
 
         if ( isset( $_POST['st_license_action'] ) && isset( $_POST['servertrack_license_key'] ) ) {
+            check_admin_referer( 'servertrack_license_action', 'servertrack_license_nonce' );
             $action = sanitize_text_field( wp_unslash( $_POST['st_license_action'] ) );
             $key = sanitize_text_field( wp_unslash( $_POST['servertrack_license_key'] ) );
 
