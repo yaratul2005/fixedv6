@@ -45,7 +45,7 @@ class ServerTrack_Health {
         }
 
         // Lightweight diagnostic call to check token validity
-        $url = "https://graph.facebook.com/v19.0/{$pixel_id}?access_token={$token}&fields=id,name";
+        $url = "https://graph.facebook.com/v22.0/{$pixel_id}?access_token={$token}&fields=id,name";
         $response = wp_remote_get( $url, [ 'timeout' => 10 ] );
 
         if ( is_wp_error( $response ) ) {

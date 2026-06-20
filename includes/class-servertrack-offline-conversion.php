@@ -11,7 +11,7 @@
  *   silently swallowed by the Throwable catch — making offline conversions
  *   fail with no clear log reason.
  *
- *   Fix: version bumped to v21.0 (current stable as of 2026).
+ *   Fix: version bumped to v22.0 (current stable as of 2026).
  *   API version extracted into class constant GRAPH_API_VERSION so future
  *   upgrades require a one-line change, not a search-and-replace.
  *
@@ -42,10 +42,10 @@ class ServerTrack_OfflineConversion {
 	 * Meta Graph API version.
 	 *
 	 * BUG-03 FIX: was v19.0 (deprecated May 2025, at risk of sunset).
-	 * Bumped to v21.0 (current stable, supported through at least mid-2027).
+	 * Bumped to v22.0 (current stable, supported through at least mid-2027).
 	 * Update this constant when Meta releases a new stable version.
 	 */
-	const GRAPH_API_VERSION = 'v21.0';
+	const GRAPH_API_VERSION = 'v22.0';
 
 	/** WooCommerce order statuses that count as a completed offline conversion. */
 	const COMPLETED_STATUSES = [ 'completed', 'processing' ];
@@ -223,7 +223,7 @@ class ServerTrack_OfflineConversion {
 	 * Dispatch an array of event payloads to the given platform API.
 	 *
 	 * BUG-03 FIX: was hardcoded to v19.0 — now uses GRAPH_API_VERSION constant
-	 * (currently v21.0). Throws on HTTP error or non-2xx response.
+	 * (currently v22.0). Throws on HTTP error or non-2xx response.
 	 *
 	 * @param array  $events
 	 * @param string $platform
@@ -239,7 +239,7 @@ class ServerTrack_OfflineConversion {
 				if ( ! $access_token || ! $dataset_id ) {
 					throw new \RuntimeException( 'Meta offline: missing access_token or dataset_id.' );
 				}
-				// BUG-03 FIX: v19.0 → GRAPH_API_VERSION constant (v21.0).
+				// BUG-03 FIX: v19.0 → GRAPH_API_VERSION constant (v22.0).
 				$url      = sprintf(
 					'https://graph.facebook.com/%s/%s/events',
 					self::GRAPH_API_VERSION,
