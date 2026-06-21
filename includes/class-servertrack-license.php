@@ -179,8 +179,8 @@ class ServerTrack_License {
                 'url'           => $data['homepage'] ?? self::STORE_URL,
                 'tested'        => $data['min_wp'] ?? '',
                 'requires_php'  => $data['min_php'] ?? '',
-                'sections'      => self::safe_unserialize( $data['sections'] ?? [] ),
-                'banners'       => self::safe_unserialize( $data['banners'] ?? [] ),
+                'sections'      => self::parse_array_data( $data['sections'] ?? [] ),
+                'banners'       => self::parse_array_data( $data['banners'] ?? [] ),
             ];
         }
 
@@ -188,16 +188,23 @@ class ServerTrack_License {
     }
 
     /**
-     * Safely unserialize data, preventing object instantiation.
+     * Parse array data securely, expecting native array or JSON string.
      *
-     * @param mixed $data The data to unserialize.
-     * @return mixed The unserialized data, or the original data if not serialized.
+     * Replacing unserialize with JSON decoding mitigates PHP Object Injection vulnerabilities.
+     *
+     * @param mixed $data The data to parse.
+     * @return array The parsed array data.
      */
-    private static function safe_unserialize( $data ) {
-        if ( is_string( $data ) && is_serialized( $data ) ) {
-            $unserialized = @unserialize( $data, [ 'allowed_classes' => false ] );
-            return $unserialized !== false ? $unserialized : [];
+    private static function parse_array_data( $data ): array {
+        if ( is_array( $data ) ) {
+            return $data;
         }
-        return $data;
+        if ( is_string( $data ) ) {
+            $decoded = json_decode( $data, true );
+            if ( is_array( $decoded ) ) {
+                return $decoded;
+            }
+        }
+        return [];
     }
 }
