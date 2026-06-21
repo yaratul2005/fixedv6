@@ -51,9 +51,17 @@ class HasherTest extends TestCase {
         $this->assertEquals($expected, ServerTrack_Hasher::hash_country(' us '));
     }
 
-    public function test_hash_email_is_alias_of_hash() {
+    public function test_hash_email_normalizes_and_hashes() {
         $expected = hash('sha256', 'test@example.com');
+
+        $this->assertEquals($expected, ServerTrack_Hasher::hash_email('test@example.com'));
         $this->assertEquals($expected, ServerTrack_Hasher::hash_email(' Test@Example.com '));
+        $this->assertEquals($expected, ServerTrack_Hasher::hash_email('TEST@EXAMPLE.COM'));
+    }
+
+    public function test_hash_email_returns_empty_string_for_empty_input() {
+        $this->assertEquals('', ServerTrack_Hasher::hash_email(''));
+        $this->assertEquals('', ServerTrack_Hasher::hash_email('   '));
     }
 
     public function test_hash_phone_strips_non_numeric() {

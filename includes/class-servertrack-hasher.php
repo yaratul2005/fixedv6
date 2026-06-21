@@ -96,7 +96,11 @@ class ServerTrack_Hasher {
      * Normalises to lowercase + trim.
      */
     public static function hash_email( string $email ): string {
-        return self::hash( $email );
+        $email = trim( strtolower( $email ) );
+        if ( empty( $email ) ) {
+            return '';
+        }
+        return hash( 'sha256', $email );
     }
 
     /**
