@@ -39,8 +39,7 @@ class ServerTrack_Frontend {
 
     /**
      * Allowlist of event names accepted by the /custom-event REST endpoint.
-     *
-     * FIX-12: Prevents arbitrary strings from reaching CAPI senders.
+     * Prevents arbitrary strings from reaching CAPI senders.
      */
     private const ALLOWED_EVENT_NAMES = [
         // Standard purchase funnel
@@ -164,14 +163,13 @@ class ServerTrack_Frontend {
             return new WP_Error( 'disabled', 'ServerTrack disabled', [ 'status' => 403 ] );
         }
 
-        // FIX-12: Validate event_name against the allowlist.
         $event_name = $request->get_param( 'event_name' );
-        if ( ! in_array( $event_name, self::ALLOWED_EVENT_NAMES, true ) ) {
+        if ( ! is_string( $event_name ) || ! in_array( $event_name, self::ALLOWED_EVENT_NAMES, true ) ) {
             return new WP_Error(
                 'invalid_event_name',
                 sprintf(
                     'Unknown event type \'%s\'. Allowed values: %s.',
-                    esc_html( $event_name ),
+                    esc_html( (string) $event_name ),
                     implode( ', ', self::ALLOWED_EVENT_NAMES )
                 ),
                 [ 'status' => 400 ]
