@@ -59,7 +59,7 @@ class ServerTrack_Event {
 
     /** @return static Fluent setter. */
     public function set_user_data( array $user_data ): static {
-        $this->user_data = $user_data;
+        $this->user_data = array_merge( $this->user_data, $user_data );
         return $this;
     }
 

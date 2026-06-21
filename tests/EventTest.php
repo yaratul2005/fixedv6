@@ -27,4 +27,20 @@ class EventTest extends TestCase {
         $event->set_custom_data(['value' => 200.0]);
         $this->assertEquals(['value' => 200.0, 'currency' => 'USD', 'content_ids' => ['SKU1']], $event->custom_data);
     }
+
+    public function test_set_user_data_merges_arrays() {
+        $event = new ServerTrack_Event('Purchase', '123');
+
+        // Initial set
+        $event->set_user_data(['email' => 'test@example.com', 'phone' => '1234567890']);
+        $this->assertEquals(['email' => 'test@example.com', 'phone' => '1234567890'], $event->user_data);
+
+        // Secondary set should merge, adding 'ip' and keeping existing
+        $event->set_user_data(['ip' => '127.0.0.1']);
+        $this->assertEquals(['email' => 'test@example.com', 'phone' => '1234567890', 'ip' => '127.0.0.1'], $event->user_data);
+
+        // Third set should overwrite existing key 'phone'
+        $event->set_user_data(['phone' => '0987654321']);
+        $this->assertEquals(['email' => 'test@example.com', 'phone' => '0987654321', 'ip' => '127.0.0.1'], $event->user_data);
+    }
 }
