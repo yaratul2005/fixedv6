@@ -65,6 +65,11 @@ class ServerTrack_Hasher {
      *                              Pass empty string to skip prepending.
      */
     public static function hash_phone( string $phone, string $country_code = '' ): string {
+        $phone = trim( $phone );
+        if ( empty( $phone ) ) {
+            return '';
+        }
+
         $digits = preg_replace( '/[^0-9]/', '', $phone );
 
         if ( '' === $digits ) {

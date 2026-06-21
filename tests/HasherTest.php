@@ -87,6 +87,7 @@ class HasherTest extends TestCase {
 
     public function test_hash_phone_empty() {
         $this->assertEquals('', ServerTrack_Hasher::hash_phone(''));
+        $this->assertEquals('', ServerTrack_Hasher::hash_phone('   '));
         $this->assertEquals('', ServerTrack_Hasher::hash_phone('abc'));
     }
 
