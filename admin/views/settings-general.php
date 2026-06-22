@@ -5,32 +5,39 @@
  */
 if ( ! defined( 'ABSPATH' ) ) exit;
 ?>
+<div class="st-settings-section">
 <table class="form-table" role="presentation">
     <tr>
         <th scope="row"><?php esc_html_e( 'Enable Plugin', 'servertrack' ); ?></th>
         <td>
-            <label>
-                <input type="checkbox" name="servertrack_enabled" value="1"
+            <label class="st-toggle-label st-row" style="cursor:pointer; display:flex; align-items:center;">
+    <div class="st-toggle" style="margin-right:12px;">
+        <input type="checkbox" name="servertrack_enabled" value="1"
                     <?php checked( 1, get_option( 'servertrack_enabled', 1 ) ); ?> />
-                <?php esc_html_e( 'Activate server-side event sending', 'servertrack' ); ?>
-            </label>
+        <span class="st-toggle-slider"></span>
+    </div>
+    <span class="st-toggle-text" style="font-weight:500;"><?php esc_html_e( 'Activate server-side event sending', 'servertrack' ); ?></span>
+</label>
         </td>
     </tr>
     <tr>
         <th scope="row"><?php esc_html_e( 'Test Mode', 'servertrack' ); ?></th>
         <td>
-            <label>
-                <input type="checkbox" name="servertrack_test_mode" value="1"
+            <label class="st-toggle-label st-row" style="cursor:pointer; display:flex; align-items:center;">
+    <div class="st-toggle" style="margin-right:12px;">
+        <input type="checkbox" name="servertrack_test_mode" value="1"
                     <?php checked( 1, get_option( 'servertrack_test_mode', 0 ) ); ?> />
-                <?php esc_html_e( 'Send events to platform test/sandbox endpoints only', 'servertrack' ); ?>
-            </label>
+        <span class="st-toggle-slider"></span>
+    </div>
+    <span class="st-toggle-text" style="font-weight:500;"><?php esc_html_e( 'Send events to platform test/sandbox endpoints only', 'servertrack' ); ?></span>
+</label>
             <p class="description"><?php esc_html_e( 'Enable this during development. Disable before going live.', 'servertrack' ); ?></p>
         </td>
     </tr>
     <tr>
         <th scope="row"><label for="servertrack_consent_mode"><?php esc_html_e( 'Consent Mode', 'servertrack' ); ?></label></th>
         <td>
-            <select id="servertrack_consent_mode" name="servertrack_consent_mode">
+            <select class="st-field-select" id="servertrack_consent_mode" name="servertrack_consent_mode">
                 <?php
                 $current = get_option( 'servertrack_consent_mode', 'none' );
                 $options = [
@@ -53,3 +60,4 @@ if ( ! defined( 'ABSPATH' ) ) exit;
         </td>
     </tr>
 </table>
+</div><!-- /.st-settings-section -->

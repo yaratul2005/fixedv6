@@ -20,11 +20,14 @@ if ( ! defined( 'ABSPATH' ) ) exit;
     <tr>
         <th scope="row"><?php esc_html_e( 'WooCommerce', 'servertrack' ); ?></th>
         <td>
-            <label>
-                <input type="checkbox" name="servertrack_source_woo_enabled" value="1"
+            <label class="st-toggle-label st-row" style="cursor:pointer; display:flex; align-items:center;">
+    <div class="st-toggle" style="margin-right:12px;">
+        <input type="checkbox" name="servertrack_source_woo_enabled" value="1"
                     <?php checked( 1, get_option( 'servertrack_source_woo_enabled', 1 ) ); ?> />
-                <?php esc_html_e( 'Enable WooCommerce tracking (Purchase, ViewContent, AddToCart, InitiateCheckout, AddPaymentInfo, CompleteRegistration, Refund, Renewal)', 'servertrack' ); ?>
-            </label>
+        <span class="st-toggle-slider"></span>
+    </div>
+    <span class="st-toggle-text" style="font-weight:500;"><?php esc_html_e( 'Enable WooCommerce tracking (Purchase, ViewContent, AddToCart, InitiateCheckout, AddPaymentInfo, CompleteRegistration, Refund, Renewal)', 'servertrack' ); ?></span>
+</label>
         </td>
     </tr>
 
@@ -34,11 +37,14 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <?php esc_html_e( 'Manual Purchase Verification', 'servertrack' ); ?>
         </th>
         <td>
-            <label class="st-toggle">
-                <input type="checkbox" name="servertrack_manual_purchase_enabled" value="1"
+            <label class="st-toggle-label st-row" style="cursor:pointer; display:flex; align-items:center;">
+    <div class="st-toggle" style="margin-right:12px;">
+        <input type="checkbox" name="servertrack_manual_purchase_enabled" value="1"
                     <?php checked( 1, get_option( 'servertrack_manual_purchase_enabled', 0 ) ); ?> />
-                <span class="st-toggle-slider"></span>
-            </label>
+        <span class="st-toggle-slider"></span>
+    </div>
+    <span class="st-toggle-text" style="font-weight:500;"><span class="st-toggle-slider"></span></span>
+</label>
             <span class="st-toggle-label"><?php esc_html_e( 'Enable manual Purchase event firing', 'servertrack' ); ?></span>
 
             <p class="description">
@@ -51,11 +57,14 @@ if ( ! defined( 'ABSPATH' ) ) exit;
     <tr>
         <th scope="row"><?php esc_html_e( 'Cart Abandonment', 'servertrack' ); ?></th>
         <td>
-            <label>
-                <input type="checkbox" name="servertrack_source_cart_abandonment_enabled" value="1"
+            <label class="st-toggle-label st-row" style="cursor:pointer; display:flex; align-items:center;">
+    <div class="st-toggle" style="margin-right:12px;">
+        <input type="checkbox" name="servertrack_source_cart_abandonment_enabled" value="1"
                     <?php checked( 1, get_option( 'servertrack_source_cart_abandonment_enabled', 0 ) ); ?> />
-                <?php esc_html_e( 'Enable cart abandonment tracking (fires InitiateCheckout CAPI event after the abandonment window)', 'servertrack' ); ?>
-            </label>
+        <span class="st-toggle-slider"></span>
+    </div>
+    <span class="st-toggle-text" style="font-weight:500;"><?php esc_html_e( 'Enable cart abandonment tracking (fires InitiateCheckout CAPI event after the abandonment window)', 'servertrack' ); ?></span>
+</label>
             <p class="description">
                 <?php esc_html_e( 'Requires WooCommerce. Sends InitiateCheckout (Meta/TikTok) and begin_checkout (Google) when a cart is abandoned.', 'servertrack' ); ?>
             </p>
@@ -82,11 +91,14 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <span style="display:block;font-size:11px;font-weight:400;color:#6b7280;margin-top:2px;">v3.3</span>
         </th>
         <td>
-            <label>
-                <input type="checkbox" name="servertrack_source_order_status_enabled" value="1"
+            <label class="st-toggle-label st-row" style="cursor:pointer; display:flex; align-items:center;">
+    <div class="st-toggle" style="margin-right:12px;">
+        <input type="checkbox" name="servertrack_source_order_status_enabled" value="1"
                     <?php checked( 1, get_option( 'servertrack_source_order_status_enabled', 1 ) ); ?> />
-                <?php esc_html_e( 'Enable order lifecycle events (on-hold, failed, cancelled)', 'servertrack' ); ?>
-            </label>
+        <span class="st-toggle-slider"></span>
+    </div>
+    <span class="st-toggle-text" style="font-weight:500;"><?php esc_html_e( 'Enable order lifecycle events (on-hold, failed, cancelled)', 'servertrack' ); ?></span>
+</label>
             <p class="description">
                 <?php esc_html_e( 'Fires server-side Lead / Contact / SubmitForm events when an order transitions to on-hold, failed, or cancelled status.', 'servertrack' ); ?>
             </p>
@@ -105,11 +117,14 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <span style="display:block;font-size:11px;font-weight:400;color:#6b7280;margin-top:2px;">v3.3 · Opt-in</span>
         </th>
         <td>
-            <label>
-                <input type="checkbox" name="servertrack_source_wishlist_enabled" value="1"
+            <label class="st-toggle-label st-row" style="cursor:pointer; display:flex; align-items:center;">
+    <div class="st-toggle" style="margin-right:12px;">
+        <input type="checkbox" name="servertrack_source_wishlist_enabled" value="1"
                     <?php checked( 1, get_option( 'servertrack_source_wishlist_enabled', 0 ) ); ?> />
-                <?php esc_html_e( 'Enable AddToWishlist CAPI events (Meta & TikTok)', 'servertrack' ); ?>
-            </label>
+        <span class="st-toggle-slider"></span>
+    </div>
+    <span class="st-toggle-text" style="font-weight:500;"><?php esc_html_e( 'Enable AddToWishlist CAPI events (Meta & TikTok)', 'servertrack' ); ?></span>
+</label>
             <p class="description">
                 <?php esc_html_e( 'Requires YITH WooCommerce Wishlist or TI WooCommerce Wishlist plugin.', 'servertrack' ); ?>
             </p>
@@ -128,11 +143,14 @@ if ( ! defined( 'ABSPATH' ) ) exit;
             <span style="display:block;font-size:11px;font-weight:400;color:#6b7280;margin-top:2px;">v3.3</span>
         </th>
         <td>
-            <label>
-                <input type="checkbox" name="servertrack_source_partial_refund_enabled" value="1"
+            <label class="st-toggle-label st-row" style="cursor:pointer; display:flex; align-items:center;">
+    <div class="st-toggle" style="margin-right:12px;">
+        <input type="checkbox" name="servertrack_source_partial_refund_enabled" value="1"
                     <?php checked( 1, get_option( 'servertrack_source_partial_refund_enabled', 1 ) ); ?> />
-                <?php esc_html_e( 'Enable partial refund CAPI events (exact refund amount, not order total)', 'servertrack' ); ?>
-            </label>
+        <span class="st-toggle-slider"></span>
+    </div>
+    <span class="st-toggle-text" style="font-weight:500;"><?php esc_html_e( 'Enable partial refund CAPI events (exact refund amount, not order total)', 'servertrack' ); ?></span>
+</label>
             <p class="description">
                 <?php esc_html_e( 'Sends a Purchase event with a negative value equal to the exact partial refund amount.', 'servertrack' ); ?>
             </p>
@@ -148,11 +166,14 @@ if ( ! defined( 'ABSPATH' ) ) exit;
     <tr>
         <th scope="row"><?php esc_html_e( 'Contact Form 7', 'servertrack' ); ?></th>
         <td>
-            <label>
-                <input type="checkbox" name="servertrack_source_cf7_enabled" value="1"
+            <label class="st-toggle-label st-row" style="cursor:pointer; display:flex; align-items:center;">
+    <div class="st-toggle" style="margin-right:12px;">
+        <input type="checkbox" name="servertrack_source_cf7_enabled" value="1"
                     <?php checked( 1, get_option( 'servertrack_source_cf7_enabled', 0 ) ); ?> />
-                <?php esc_html_e( 'Enable Contact Form 7 tracking (Lead event on form submit)', 'servertrack' ); ?>
-            </label>
+        <span class="st-toggle-slider"></span>
+    </div>
+    <span class="st-toggle-text" style="font-weight:500;"><?php esc_html_e( 'Enable Contact Form 7 tracking (Lead event on form submit)', 'servertrack' ); ?></span>
+</label>
             <div style="margin-top: 10px;">
                 <strong>Event Mapping:</strong><br>
                 <span class="st-badge meta">Meta</span> <span class="st-badge tiktok">TikTok</span> <span class="st-badge google">Google</span> <br>
@@ -165,11 +186,14 @@ if ( ! defined( 'ABSPATH' ) ) exit;
     <tr>
         <th scope="row"><?php esc_html_e( 'Easy Digital Downloads', 'servertrack' ); ?></th>
         <td>
-            <label>
-                <input type="checkbox" name="servertrack_source_edd_enabled" value="1"
+            <label class="st-toggle-label st-row" style="cursor:pointer; display:flex; align-items:center;">
+    <div class="st-toggle" style="margin-right:12px;">
+        <input type="checkbox" name="servertrack_source_edd_enabled" value="1"
                     <?php checked( 1, get_option( 'servertrack_source_edd_enabled', 0 ) ); ?> />
-                <?php esc_html_e( 'Enable Easy Digital Downloads tracking (Purchase, Refund, new customer)', 'servertrack' ); ?>
-            </label>
+        <span class="st-toggle-slider"></span>
+    </div>
+    <span class="st-toggle-text" style="font-weight:500;"><?php esc_html_e( 'Enable Easy Digital Downloads tracking (Purchase, Refund, new customer)', 'servertrack' ); ?></span>
+</label>
         </td>
     </tr>
 
@@ -177,11 +201,14 @@ if ( ! defined( 'ABSPATH' ) ) exit;
     <tr>
         <th scope="row"><?php esc_html_e( 'WooCommerce Subscriptions', 'servertrack' ); ?></th>
         <td>
-            <label>
-                <input type="checkbox" name="servertrack_source_subscriptions_enabled" value="1"
+            <label class="st-toggle-label st-row" style="cursor:pointer; display:flex; align-items:center;">
+    <div class="st-toggle" style="margin-right:12px;">
+        <input type="checkbox" name="servertrack_source_subscriptions_enabled" value="1"
                     <?php checked( 1, get_option( 'servertrack_source_subscriptions_enabled', 0 ) ); ?> />
-                <?php esc_html_e( 'Enable WooCommerce Subscriptions tracking (renewal, cancellation, suspension events)', 'servertrack' ); ?>
-            </label>
+        <span class="st-toggle-slider"></span>
+    </div>
+    <span class="st-toggle-text" style="font-weight:500;"><?php esc_html_e( 'Enable WooCommerce Subscriptions tracking (renewal, cancellation, suspension events)', 'servertrack' ); ?></span>
+</label>
             <p class="description"><?php esc_html_e( 'Requires WooCommerce Subscriptions plugin.', 'servertrack' ); ?></p>
             <div style="margin-top: 10px;">
                 <strong>Event Mapping:</strong><br>

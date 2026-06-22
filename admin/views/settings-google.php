@@ -12,18 +12,22 @@ if ( ! defined( 'ABSPATH' ) ) exit;
  *   - Inline step-by-step guide for Google Cloud Console setup.
  */
 ?>
-    <table class="form-table" role="presentation">
+    <div class="st-settings-section">
+<table class="form-table" role="presentation">
 
         <!-- Enable / Disable -->
         <tr>
             <th scope="row"><?php esc_html_e( 'Enable Google Ads', 'servertrack' ); ?></th>
             <td>
-                <label>
-                    <input type="checkbox" name="servertrack_google_enabled" value="1"
+                <label class="st-toggle-label st-row" style="cursor:pointer; display:flex; align-items:center;">
+    <div class="st-toggle" style="margin-right:12px;">
+        <input type="checkbox" name="servertrack_google_enabled" value="1"
                         id="st-google-enabled"
                         <?php checked( 1, get_option( 'servertrack_google_enabled', 0 ) ); ?>>
-                    <?php esc_html_e( 'Send server-side conversion events to Google Ads (Enhanced Conversions).', 'servertrack' ); ?>
-                </label>
+        <span class="st-toggle-slider"></span>
+    </div>
+    <span class="st-toggle-text" style="font-weight:500;"><?php esc_html_e( 'Send server-side conversion events to Google Ads (Enhanced Conversions).', 'servertrack' ); ?></span>
+</label>
             </td>
         </tr>
 
@@ -82,7 +86,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                             'prompt'                => 'consent',
                         ], 'https://accounts.google.com/o/oauth2/v2/auth' );
                         ?>
-                        <a href="<?php echo esc_url( $oauth_url ); ?>" class="button button-primary">
+                        <a href="<?php echo esc_url( $oauth_url ); ?>" class="button button-primary st-btn-save">
                             <?php esc_html_e( '&#9654; Connect with Google', 'servertrack' ); ?>
                         </a>
                     <?php else : ?>
@@ -120,7 +124,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                     <input type="text" id="st_google_customer_id"
                            name="servertrack_google_customer_id"
                            value="<?php echo esc_attr( get_option( 'servertrack_google_customer_id', '' ) ); ?>"
-                           class="regular-text" placeholder="123-456-7890">
+                           class="regular-text st-field-input" placeholder="123-456-7890">
                     <p class="description"><?php esc_html_e( 'Your 10-digit Google Ads account ID (without dashes). Found in Google Ads → top-right menu.', 'servertrack' ); ?></p>
                 </td>
             </tr>
@@ -132,7 +136,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                     <input type="text" id="st_google_conversion_id"
                            name="servertrack_google_conversion_id"
                            value="<?php echo esc_attr( get_option( 'servertrack_google_conversion_id', '' ) ); ?>"
-                           class="regular-text" placeholder="e.g. 12345678">
+                           class="regular-text st-field-input" placeholder="e.g. 12345678">
                     <p class="description"><?php esc_html_e( 'Conversion action numeric ID from Google Ads → Goals → Conversions.', 'servertrack' ); ?></p>
                 </td>
             </tr>
@@ -144,7 +148,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                     <input type="text" id="st_google_conversion_label"
                            name="servertrack_google_conversion_label"
                            value="<?php echo esc_attr( get_option( 'servertrack_google_conversion_label', '' ) ); ?>"
-                           class="regular-text" placeholder="e.g. Aw2xL_..._Q">
+                           class="regular-text st-field-input" placeholder="e.g. Aw2xL_..._Q">
                     <p class="description"><?php esc_html_e( 'The conversion action label. Found alongside the ID in Google Ads.', 'servertrack' ); ?></p>
                 </td>
             </tr>
@@ -155,16 +159,22 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                 <td>
                     <fieldset>
                         <legend class="screen-reader-text"><span><?php esc_html_e( 'Consent Mode v2 defaults', 'servertrack' ); ?></span></legend>
-                        <label>
-                            <input type="checkbox" name="servertrack_google_consent_ad_user_data" value="1"
+                        <label class="st-toggle-label st-row" style="cursor:pointer; display:flex; align-items:center;">
+    <div class="st-toggle" style="margin-right:12px;">
+        <input type="checkbox" name="servertrack_google_consent_ad_user_data" value="1"
                                 <?php checked( 1, get_option( 'servertrack_google_consent_ad_user_data', 1 ) ); ?>>
-                            <?php esc_html_e( 'Grant ad_user_data by default', 'servertrack' ); ?>
-                        </label><br>
-                        <label>
-                            <input type="checkbox" name="servertrack_google_consent_ad_personalization" value="1"
+        <span class="st-toggle-slider"></span>
+    </div>
+    <span class="st-toggle-text" style="font-weight:500;"><?php esc_html_e( 'Grant ad_user_data by default', 'servertrack' ); ?></span>
+</label><br>
+                        <label class="st-toggle-label st-row" style="cursor:pointer; display:flex; align-items:center;">
+    <div class="st-toggle" style="margin-right:12px;">
+        <input type="checkbox" name="servertrack_google_consent_ad_personalization" value="1"
                                 <?php checked( 1, get_option( 'servertrack_google_consent_ad_personalization', 1 ) ); ?>>
-                            <?php esc_html_e( 'Grant ad_personalization by default', 'servertrack' ); ?>
-                        </label>
+        <span class="st-toggle-slider"></span>
+    </div>
+    <span class="st-toggle-text" style="font-weight:500;"><?php esc_html_e( 'Grant ad_personalization by default', 'servertrack' ); ?></span>
+</label>
                         <p class="description"><?php esc_html_e( 'If the user declines consent via your CMP, these signals will dynamically be set to DENIED in the CAPI payload regardless of these defaults.', 'servertrack' ); ?></p>
                     </fieldset>
                 </td>
@@ -177,7 +187,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                     <input type="password" id="st_google_developer_token"
                            name="servertrack_google_developer_token"
                            value="<?php echo esc_attr( get_option( 'servertrack_google_developer_token', '' ) ); ?>"
-                           class="regular-text" autocomplete="new-password">
+                           class="regular-text st-field-input" autocomplete="new-password">
                     <p class="description"><?php esc_html_e( 'From Google Ads → API Centre. Required for all Ads API calls.', 'servertrack' ); ?></p>
                 </td>
             </tr>
@@ -189,7 +199,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                     <input type="text" id="st_google_client_id"
                            name="servertrack_google_client_id"
                            value="<?php echo esc_attr( get_option( 'servertrack_google_client_id', '' ) ); ?>"
-                           class="regular-text" placeholder="xxxxxx.apps.googleusercontent.com">
+                           class="regular-text st-field-input" placeholder="xxxxxx.apps.googleusercontent.com">
                 </td>
             </tr>
 
@@ -200,7 +210,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                     <input type="password" id="st_google_client_secret"
                            name="servertrack_google_client_secret"
                            value="<?php echo esc_attr( get_option( 'servertrack_google_client_secret', '' ) ); ?>"
-                           class="regular-text" autocomplete="new-password">
+                           class="regular-text st-field-input" autocomplete="new-password">
                 </td>
             </tr>
 
@@ -210,13 +220,14 @@ if ( ! defined( 'ABSPATH' ) ) exit;
                 <th scope="row"><?php esc_html_e( 'Refresh Token', 'servertrack' ); ?></th>
                 <td>
                     <input type="text" value="<?php echo esc_attr( substr( $refresh_token, 0, 8 ) . str_repeat( '•', 20 ) ); ?>"
-                           class="regular-text" disabled readonly>
+                           class="regular-text st-field-input" disabled readonly>
                     <p class="description"><?php esc_html_e( 'Stored securely. Use Disconnect to revoke.', 'servertrack' ); ?></p>
                 </td>
             </tr>
             <?php endif; ?>
 
         </table>
+</div><!-- /.st-settings-section -->
     </div><!-- /#st-google-fields -->
 
 <script>
