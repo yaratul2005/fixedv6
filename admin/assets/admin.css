@@ -2030,3 +2030,113 @@
 /* Status Badges */
 .st-status-success { color: #10B981; background: rgba(16, 185, 129, 0.1); padding: 4px 8px; border-radius: 4px; font-weight: 600; }
 .st-status-error { color: #EF4444; background: rgba(239, 68, 68, 0.1); padding: 4px 8px; border-radius: 4px; font-weight: 600; }
+
+/* ═══════════════════════════════════════════════════════════════
+   MODERN UI UPGRADES (Cards, Inputs, Buttons & Toggle Switches)
+═══════════════════════════════════════════════════════════════ */
+
+/* Settings Container Cards */
+.st-settings-section, .st-panel {
+    background: #ffffff;
+    border-radius: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+    padding: 24px;
+    margin-bottom: 24px;
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+.st-settings-section:hover, .st-panel:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+}
+
+/* Modern Save Buttons */
+.st-btn-save, .button-primary {
+    background: linear-gradient(135deg, var(--st-brand) 0%, #0c8c88 100%) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    padding: 10px 24px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.3px !important;
+    color: #fff !important;
+    box-shadow: 0 4px 10px rgba(14, 165, 160, 0.25) !important;
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease !important;
+}
+.st-btn-save:hover, .button-primary:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 14px rgba(14, 165, 160, 0.35) !important;
+}
+.st-btn-save:active, .button-primary:active {
+    transform: translateY(1px) !important;
+    box-shadow: 0 2px 5px rgba(14, 165, 160, 0.2) !important;
+}
+
+/* Base Form Controls */
+.st-field-input, .st-field-select, input[type="text"], input[type="email"], select, textarea {
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 14px;
+    background-color: #f9fafb;
+    transition: all 0.25s ease;
+}
+.st-field-input:focus, .st-field-select:focus, input[type="text"]:focus, input[type="email"]:focus, select:focus, textarea:focus {
+    border-color: var(--st-brand);
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(14, 165, 160, 0.15);
+    outline: none;
+}
+
+/* Beautiful Toggle Switches (.st-toggle) */
+.st-toggle {
+    position: relative;
+    display: inline-block;
+    width: 44px;
+    height: 24px;
+    margin-right: 12px;
+    vertical-align: middle;
+}
+.st-toggle input[type="checkbox"] {
+    opacity: 0;
+    width: 0;
+    height: 0;
+    position: absolute;
+}
+.st-toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #cbd5e1;
+    transition: .4s;
+    border-radius: 24px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+.st-toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+.st-toggle input:checked + .st-toggle-slider {
+    background-color: var(--st-brand);
+}
+.st-toggle input:focus + .st-toggle-slider {
+    box-shadow: 0 0 0 3px rgba(14, 165, 160, 0.25), inset 0 1px 3px rgba(0,0,0,0.1);
+}
+.st-toggle input:checked + .st-toggle-slider:before {
+    transform: translateX(20px);
+}
+.st-field-desc {
+    color: var(--st-text-muted);
+    font-size: 13px;
+    margin-top: 6px;
+    line-height: 1.5;
+}

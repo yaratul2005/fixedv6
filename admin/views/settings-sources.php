@@ -14,6 +14,7 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 <h2><?php esc_html_e( 'Event Sources', 'servertrack' ); ?></h2>
 <p><?php esc_html_e( 'Enable or disable individual event source integrations.', 'servertrack' ); ?></p>
 
+<div class="st-settings-section">
 <table class="form-table" role="presentation">
 
     <!-- WooCommerce core -->
@@ -219,3 +220,5 @@ if ( ! defined( 'ABSPATH' ) ) exit;
     </tr>
 
 </table>
+
+</div><!-- /.st-settings-section -->
