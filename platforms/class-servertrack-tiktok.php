@@ -110,6 +110,24 @@ class ServerTrack_TikTok {
             $page_url = home_url( $request_uri );
         }
 
+        // ── Schema Validation ────────────────────────────────────────────────
+        if ( class_exists( 'ServerTrack_EventSchema' ) ) {
+            $validation = ServerTrack_EventSchema::validate( $event->event_name, $event->custom_data );
+
+            if ( ! $validation['valid'] ) {
+                foreach ( $validation['errors'] as $error ) {
+                    ServerTrack_Logger::warning( 'schema_validation_error', $event->event_name, $error, $event->event_id );
+                }
+                return false;
+            }
+
+            foreach ( $validation['warnings'] as $warning ) {
+                ServerTrack_Logger::warning( 'schema_validation_warning', $event->event_name, $warning, $event->event_id );
+            }
+
+            $event->custom_data = $validation['filtered_data'];
+        }
+
         // ── Assemble event payload ───────────────────────────────────────────
         $event_data = [
             'event'      => $tiktok_event,
