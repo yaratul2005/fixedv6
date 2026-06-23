@@ -134,31 +134,6 @@ class ServerTrack_Meta {
             $source_url = home_url( $request_uri );
         }
 
-        // ── Schema Validation ────────────────────────────────────────────────
-        if ( class_exists( 'ServerTrack_EventSchema' ) ) {
-            $validation = ServerTrack_EventSchema::validate( $event->event_name, $event->custom_data );
-
-            if ( ! $validation['valid'] ) {
-                foreach ( $validation['errors'] as $error ) {
-                    ServerTrack_Logger::warning( 'schema_validation_error', $event->event_name, $error, $event->event_id );
-                }
-                return false; // Reject invalid event
-            }
-
-            foreach ( $validation['warnings'] as $warning ) {
-                ServerTrack_Logger::warning( 'schema_validation_warning', $event->event_name, $warning, $event->event_id );
-            }
-
-            $event->custom_data = $validation['filtered_data'];
-        }
-
-        // ── Event Lifecycle Validation ───────────────────────────────────────
-        $time_check = ServerTrack_Event::validate_event_time( time() ); // Replace with actual event time if stored. Assuming time() for real-time.
-        // If event->timestamp exists we would use it, but ServerTrack_Event usually emits instantly.
-
-        // Calculate EMQ
-        $emq_score = ServerTrack_Event::calculate_emq_score( $ud );
-
         // ── Assemble event payload ───────────────────────────────────────────
         $event_payload = [
             'event_name'       => $event->event_name,
@@ -166,7 +141,6 @@ class ServerTrack_Meta {
             'event_id'         => $event->event_id,
             'event_source_url' => $source_url,
             'action_source'    => 'website',
-            'opt_out'          => $event->opt_out,
             'user_data'        => $ud,
             'custom_data'      => $event->custom_data,
         ];

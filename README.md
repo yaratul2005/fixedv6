@@ -110,29 +110,3 @@ ServerTrack employs a flawless dual-layer mechanism:
 ## License
 
 GPL-2.0-or-later · © MD. Yaser Ahmmed Ratul
-
-## Compliance & Certifications
-
-✅ **Facebook Conversions API Compliance**
-   - Event Schema Validation
-   - Parameter Builder Pattern
-   - Event Match Quality (EMQ) Scoring
-   - Advanced User Data Handling
-
-✅ **GDPR Compliant**
-   - Per-order consent storage
-   - PII hashing (SHA-256)
-   - Opt-out support
-
-✅ **CCPA Compliant**
-   - Data minimization
-   - User opt-out handling
-   - Privacy-first design
-
-## Documentation
-
-- [Parameter Reference Guide](docs/CAPI-PARAMETER-REFERENCE.md)
-- [Integration Examples](docs/CAPI-INTEGRATION-EXAMPLES.md)
-- [Troubleshooting Guide](docs/CAPI-TROUBLESHOOTING.md)
-- [Consent & Privacy Guide](docs/CAPI-CONSENT-GUIDE.md)
-- [Event Match Quality (EMQ)](docs/CAPI-EMQ-GUIDE.md)

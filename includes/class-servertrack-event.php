@@ -51,7 +51,6 @@ class ServerTrack_Event {
      * If empty, platform senders fall back to home_url().
      */
     public string $event_source_url = '';
-    public bool $opt_out = false;
 
     public function __construct( string $event_name, string $event_id ) {
         $this->event_name = $event_name;
