@@ -59,7 +59,6 @@ class ServerTrack_WooCommerce {
 
         // Cron hooks kept as fallback for environments where loopback works
         add_action( 'servertrack_send_woo_purchase',      [ self::class, 'send_purchase_async' ],     10, 2 );
-        add_action( 'servertrack_send_woo_view_content',  [ self::class, 'send_view_content_async' ], 10, 2 );
         add_action( 'servertrack_send_woo_refund',        [ self::class, 'send_refund_async' ],       10, 1 );
     }
 
@@ -311,10 +310,10 @@ class ServerTrack_WooCommerce {
         if ( ! get_option( 'servertrack_meta_enabled', 0 ) && ! get_option( 'servertrack_tiktok_enabled', 0 ) ) return;
         $product_id = get_queried_object_id();
         if ( ! $product_id ) return;
-        // BUG-B FIX: call directly, schedule as fallback
+
+        // Removed the cron fallback because it caused every ViewContent event to be double-counted
+        // with two different Event IDs (since ViewContent generates a new event ID per execution).
         self::send_view_content_async( $product_id, self::build_browser_user_data() );
-        wp_schedule_single_event( time() + 5, 'servertrack_send_woo_view_content', [ $product_id, self::build_browser_user_data() ] );
-        spawn_cron();
     }
 
     public static function send_view_content_async( int $product_id, array $context ) {
