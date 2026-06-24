@@ -133,8 +133,14 @@ class ServerTrack_Frontend {
             'methods'  => 'POST',
             'callback' => function( WP_REST_Request $req ) {
                 $em = sanitize_text_field( $req->get_json_params()['em'] ?? '' );
-                if ( $em && function_exists( 'WC' ) && WC()->session ) {
-                    WC()->session->set( 'st_em', $em );
+                $is_hashed = (bool) ( $req->get_json_params()['is_hashed'] ?? false );
+                if ( $em ) {
+                    if ( ! $is_hashed ) {
+                        $em = ServerTrack_Hasher::hash_email( $em );
+                    }
+                    if ( function_exists( 'WC' ) && WC()->session ) {
+                        WC()->session->set( 'st_em', $em );
+                    }
                 }
                 return new WP_REST_Response( ['ok' => true] );
             },

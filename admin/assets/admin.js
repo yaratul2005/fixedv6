@@ -71,10 +71,13 @@
   /* ─────────────────────────────────────────────────
      PLATFORM TEST BUTTONS
   ───────────────────────────────────────────────── */
-  $(document).on('click', '.st-test-btn[data-platform]', function () {
+  $(document).on('click', '.st-test-btn[data-platform], .servertrack-test-btn[data-platform]', function () {
     var $btn      = $(this);
     var platform  = $btn.data('platform');
     var $result   = $btn.closest('.st-platform-card').find('.st-test-result');
+    if (!$result.length) {
+      $result = $('#servertrack-test-response-' + platform);
+    }
 
     if ($btn.prop('disabled')) return;
 

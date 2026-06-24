@@ -45,12 +45,22 @@
                 const email = emailField.value.trim().toLowerCase();
                 if (!email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) return;
 
-                // Hash client-side using SHA-256
-                const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(email));
-                const hashHex = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+                let emailToSend = email;
+                let isHashed = false;
+
+                if (window.crypto && window.crypto.subtle) {
+                    try {
+                        const hashBuffer = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(email));
+                        emailToSend = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+                        isHashed = true;
+                    } catch (e) {
+                        // ignore and fall back to plain text email
+                    }
+                }
 
                 navigator.sendBeacon(ST_Data.rest_url + 'capture-pii', JSON.stringify({
-                    em: hashHex,
+                    em: emailToSend,
+                    is_hashed: isHashed,
                     _wpnonce: ST_Data.nonce
                 }));
             }, 800);

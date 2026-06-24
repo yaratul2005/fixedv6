@@ -197,6 +197,15 @@ class ServerTrack_CartAbandonment {
         if ( WC()->session ) {
             $email = (string) ( WC()->session->get( 'billing_email' ) ?? '' );
             if ( $email && is_email( $email ) ) return $email;
+
+            // Check capture-pii REST fallback (could be raw or hashed email)
+            $st_em = (string) ( WC()->session->get( 'st_em' ) ?? '' );
+            if ( $st_em ) {
+                if ( is_email( $st_em ) || preg_match( '/^[a-f0-9]{64}$/', $st_em ) ) {
+                    return $st_em;
+                }
+            }
+
             // Also check customer data object stored in session
             $customer = WC()->session->get( 'customer' );
             if ( is_array( $customer ) && ! empty( $customer['email'] ) ) {

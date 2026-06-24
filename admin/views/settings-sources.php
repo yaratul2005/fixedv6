@@ -39,14 +39,13 @@ if ( ! defined( 'ABSPATH' ) ) exit;
         </th>
         <td>
             <label class="st-toggle-label st-row" style="cursor:pointer; display:flex; align-items:center;">
-    <div class="st-toggle" style="margin-right:12px;">
-        <input type="checkbox" name="servertrack_manual_purchase_enabled" value="1"
-                    <?php checked( 1, get_option( 'servertrack_manual_purchase_enabled', 0 ) ); ?> />
-        <span class="st-toggle-slider"></span>
-    </div>
-    <span class="st-toggle-text" style="font-weight:500;"><span class="st-toggle-slider"></span></span>
-</label>
-            <span class="st-toggle-label"><?php esc_html_e( 'Enable manual Purchase event firing', 'servertrack' ); ?></span>
+                <div class="st-toggle" style="margin-right:12px;">
+                    <input type="checkbox" name="servertrack_manual_purchase_enabled" value="1"
+                                <?php checked( 1, get_option( 'servertrack_manual_purchase_enabled', 0 ) ); ?> />
+                    <span class="st-toggle-slider"></span>
+                </div>
+                <span class="st-toggle-text" style="font-weight:500;"><?php esc_html_e( 'Enable manual Purchase event firing', 'servertrack' ); ?></span>
+            </label>
 
             <p class="description">
                 <?php esc_html_e( 'When enabled, automatic Purchase events on the Thank You page are disabled. You must manually fire the Purchase event from the WooCommerce Orders page after verifying the order is legitimate.', 'servertrack' ); ?>

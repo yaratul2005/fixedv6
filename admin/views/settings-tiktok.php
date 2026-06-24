@@ -53,4 +53,4 @@ if ( ! defined( 'ABSPATH' ) ) exit;
 <button type="button" class="button button-secondary servertrack-test-btn" data-platform="tiktok">
     <?php esc_html_e( 'Send Test Event → TikTok', 'servertrack' ); ?>
 </button>
-<div class="servertrack-test-response" id="servertrack-test-response-tiktok"></div>
+<div class="st-test-result servertrack-test-response" id="servertrack-test-response-tiktok"></div>
