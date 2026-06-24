@@ -66,9 +66,17 @@ class ServerTrack_WooCommerce {
     // ── PURCHASE ──────────────────────────────────────────────────────────────────────
 
     public static function on_thankyou( int $order_id ) {
-        if ( ! get_option( 'servertrack_enabled', 1 ) ) return;
+        // Process lock to prevent duplicate execution from page refreshes/multiple callbacks
         $order = wc_get_order( $order_id );
         if ( ! $order ) return;
+
+        if ( $order->get_meta( '_servertrack_thankyou_processed', true ) ) {
+            return;
+        }
+        $order->update_meta_data( '_servertrack_thankyou_processed', '1' );
+        $order->save_meta_data();
+
+        if ( ! get_option( 'servertrack_enabled', 1 ) ) return;
         if ( $order->get_meta( '_subscription_renewal' ) ) {
             ServerTrack_Logger::log( 'skipped', 'all', 'Subscription renewal — handled by renewals source.', '', '', $order_id, 'Purchase' );
             return;
@@ -88,16 +96,34 @@ class ServerTrack_WooCommerce {
         // blocked so wp-cron.php is never reached and events never fire.
         self::send_purchase_async( $order_id, 'thankyou' );
 
-        // Also schedule via cron as a secondary safety net for
-        // environments where the direct call is cut short by PHP timeout.
-        wp_schedule_single_event( time() + 5, 'servertrack_send_woo_purchase', [ $order_id, 'thankyou_cron' ] );
-        spawn_cron();
+        // Only schedule cron if any platform is missing from the sent list
+        $order = wc_get_order( $order_id ); // re-fetch to ensure fresh meta
+        $sent_platforms = $order ? $order->get_meta( '_servertrack_server_sent' ) : [];
+        if ( ! is_array( $sent_platforms ) ) $sent_platforms = [];
+
+        $needs_meta   = get_option( 'servertrack_meta_enabled', 0 ) && ! in_array( 'meta', $sent_platforms, true );
+        $needs_tiktok = get_option( 'servertrack_tiktok_enabled', 0 ) && ! in_array( 'tiktok', $sent_platforms, true );
+        $needs_google = get_option( 'servertrack_google_enabled', 0 ) && ! in_array( 'google', $sent_platforms, true );
+
+        if ( $needs_meta || $needs_tiktok || $needs_google ) {
+            wp_schedule_single_event( time() + 5, 'servertrack_send_woo_purchase', [ $order_id, 'thankyou_cron' ] );
+            spawn_cron();
+        }
     }
 
     public static function on_order_completed( int $order_id ) {
+        // Process lock to prevent duplicate execution
+        $order = wc_get_order( $order_id );
+        if ( ! $order ) return;
+
+        if ( $order->get_meta( '_servertrack_completed_processed', true ) ) {
+            return;
+        }
+        $order->update_meta_data( '_servertrack_completed_processed', '1' );
+        $order->save_meta_data();
+
         if ( ! get_option( 'servertrack_enabled', 1 ) ) return;
         if ( ! get_option( 'servertrack_google_enabled', 0 ) ) return;
-        $order = wc_get_order( $order_id );
         if ( $order && $order->get_meta( '_subscription_renewal' ) ) return;
         if ( ServerTrack_Dedup::was_sent( $order_id, 'google' ) ) {
             ServerTrack_Logger::log( 'dedup_blocked', 'google', 'order_status_completed: already sent', '', ServerTrack_Dedup::get_event_id( $order_id ), $order_id, 'Purchase' );
@@ -105,8 +131,18 @@ class ServerTrack_WooCommerce {
         }
         // Direct call first, cron as fallback
         self::send_purchase_async( $order_id, 'completed' );
-        wp_schedule_single_event( time() + 5, 'servertrack_send_woo_purchase', [ $order_id, 'completed_cron' ] );
-        spawn_cron();
+
+        // Only schedule cron if Google is missing from the sent list (since this hook only fires for Google)
+        $order = wc_get_order( $order_id ); // re-fetch to ensure fresh meta
+        $sent_platforms = $order ? $order->get_meta( '_servertrack_server_sent' ) : [];
+        if ( ! is_array( $sent_platforms ) ) $sent_platforms = [];
+
+        $needs_google = get_option( 'servertrack_google_enabled', 0 ) && ! in_array( 'google', $sent_platforms, true );
+
+        if ( $needs_google ) {
+            wp_schedule_single_event( time() + 5, 'servertrack_send_woo_purchase', [ $order_id, 'completed_cron' ] );
+            spawn_cron();
+        }
     }
 
     public static function on_order_refunded( int $order_id ) {
@@ -187,6 +223,21 @@ class ServerTrack_WooCommerce {
         if ( ! $order ) {
             ServerTrack_Logger::log( 'error', 'all', 'send_purchase_async: order #' . $order_id . ' not found.', '', '', $order_id, 'Purchase' );
             return;
+        }
+
+        // Prevent cron from running if already sent to all enabled platforms
+        if ( strpos( $trigger, '_cron' ) !== false ) {
+            $sent_platforms = $order->get_meta( '_servertrack_server_sent' );
+            if ( ! is_array( $sent_platforms ) ) $sent_platforms = [];
+
+            $needs_meta   = get_option( 'servertrack_meta_enabled', 0 ) && ! in_array( 'meta', $sent_platforms, true );
+            $needs_tiktok = get_option( 'servertrack_tiktok_enabled', 0 ) && ! in_array( 'tiktok', $sent_platforms, true );
+            $needs_google = get_option( 'servertrack_google_enabled', 0 ) && ! in_array( 'google', $sent_platforms, true );
+
+            if ( ! $needs_meta && ! $needs_tiktok && ! $needs_google ) {
+                // All enabled platforms have already been sent to
+                return;
+            }
         }
         if ( '1' === (string) $order->get_meta( '_servertrack_refunded' ) ) {
             ServerTrack_Logger::log( 'skipped', 'all', 'Aborted — order was refunded.', '', ServerTrack_Dedup::get_event_id( $order_id ), $order_id, 'Purchase' );
