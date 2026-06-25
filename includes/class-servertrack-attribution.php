@@ -15,6 +15,7 @@ class ServerTrack_Attribution {
 
     const HISTORY_KEY = 'st_utm_history';
     const MAX_TOUCHES = 10;
+    private static ?array $history_cache = null;
 
     public static function init(): void {
         add_action( 'init', [ self::class, 'capture_utm_params' ], 5 );
@@ -68,14 +69,18 @@ class ServerTrack_Attribution {
     }
 
     private static function get_history(): array {
+        if ( self::$history_cache !== null ) {
+            return self::$history_cache;
+        }
+
         if ( is_user_logged_in() ) {
-            return get_user_meta( get_current_user_id(), self::HISTORY_KEY, true ) ?: [];
+            return self::$history_cache = get_user_meta( get_current_user_id(), self::HISTORY_KEY, true ) ?: [];
         }
 
         if ( function_exists('WC') && WC()->session ) {
             $session_id = WC()->session->get_customer_id();
             if ( $session_id ) {
-                return get_transient( self::HISTORY_KEY . '_' . $session_id ) ?: [];
+                return self::$history_cache = get_transient( self::HISTORY_KEY . '_' . $session_id ) ?: [];
             }
         }
 
@@ -83,10 +88,12 @@ class ServerTrack_Attribution {
         if ( session_status() === PHP_SESSION_NONE ) {
             @session_start();
         }
-        return $_SESSION[ self::HISTORY_KEY ] ?? [];
+        return self::$history_cache = $_SESSION[ self::HISTORY_KEY ] ?? [];
     }
 
     private static function save_history( array $history ): void {
+        self::$history_cache = $history;
+
         if ( is_user_logged_in() ) {
             update_user_meta( get_current_user_id(), self::HISTORY_KEY, $history );
             return;
