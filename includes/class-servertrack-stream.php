@@ -142,7 +142,7 @@ class ServerTrack_Stream {
             $event->set_custom_data( array_merge( $event->custom_data, [ 'test_event_code' => 'TEST1234' ] ) );
         }
 
-        // Dispatch logic (simulated by calling ServerTrack_Dispatcher or similar)
+        // Dispatch logic (simulated by calling ServerTrack_Core or similar)
         // Since we want to capture the response immediately and push to buffer:
         $results = [];
         foreach ( [ 'meta', 'tiktok', 'google' ] as $platform ) {

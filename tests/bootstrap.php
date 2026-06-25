@@ -161,7 +161,7 @@ class ServerTrack_Catalog {
 /**
  * Stub core dispatcher — records dispatched events.
  */
-class ServerTrack_Dispatcher {
+class ServerTrack_Core {
     public static array $dispatched = [];
 
     public static function dispatch_to_all( ServerTrack_Event $event, $dedup_key = null ): void {

@@ -25,7 +25,7 @@ class RetryTest extends TestCase {
         $GLOBALS['_st_options'] = [];
         ServerTrack_Dedup::reset();
         ServerTrack_Logger::reset();
-        ServerTrack_Dispatcher::reset();
+        ServerTrack_Core::reset();
     }
 
     // ────────────────────────────────────────────────────────────────────

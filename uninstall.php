@@ -17,7 +17,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
     exit;
 }
 
-// ── 1. Remove all plugin options ─────────────────────────────────────────────
+// 1. Remove all plugin options
 $servertrack_options = [
     // General
     'servertrack_enabled',
@@ -81,7 +81,7 @@ foreach ( $servertrack_options as $opt ) {
     delete_option( $opt );
 }
 
-// ── 2. Remove classic post meta ───────────────────────────────────────────────
+// 2. Remove classic post meta
 $meta_keys = [
     '_servertrack_event_id',
     '_servertrack_server_sent',
@@ -100,7 +100,7 @@ foreach ( $meta_keys as $meta_key ) {
     delete_post_meta_by_key( $meta_key );
 }
 
-// ── 3. Remove HPOS order meta ─────────────────────────────────────────────────
+// 3. Remove HPOS order meta
 if ( class_exists( 'WooCommerce' ) && function_exists( 'wc_get_orders' ) ) {
     global $wpdb;
     // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
@@ -115,7 +115,7 @@ if ( class_exists( 'WooCommerce' ) && function_exists( 'wc_get_orders' ) ) {
     }
 }
 
-// ── 4. Clear retry transients ─────────────────────────────────────────────────
+// 4. Clear retry transients
 global $wpdb;
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 $wpdb->query(
@@ -124,7 +124,7 @@ $wpdb->query(
         OR option_name LIKE '\_transient\_timeout\_servertrack\_retry\_%'"
 );
 
-// ── 5. Clear cart abandonment transients / options ────────────────────────────
+// 5. Clear cart abandonment transients / options
 // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 $wpdb->query(
     "DELETE FROM {$wpdb->options}
@@ -133,7 +133,7 @@ $wpdb->query(
         OR option_name LIKE 'servertrack\_abandon\_%'"
 );
 
-// ── 6. Cancel all ServerTrack cron hooks ──────────────────────────────────────
+// 6. Cancel all ServerTrack cron hooks
 $cron_hooks = [
     'servertrack_process_retry_queue',
     'servertrack_check_abandonment',
@@ -143,7 +143,7 @@ foreach ( $cron_hooks as $hook ) {
     wp_unschedule_hook( $hook );
 }
 
-// ── 7. Drop Custom Dedup Table ──────────────────────────────────────────────────
+// 7. Drop Custom Dedup Table
 global $wpdb;
 $table_name = $wpdb->prefix . 'servertrack_dedup';
 $wpdb->query( "DROP TABLE IF EXISTS {$table_name}" );

@@ -166,7 +166,7 @@ class ServerTrack_Source_WooCommerce {
             ->set_user_data( $user_data )
             ->set_custom_data( $custom_data );
 
-        ServerTrack_Dispatcher::dispatch_to_all( $event, $dedup_key );
+        ServerTrack_Core::dispatch_to_all( $event, $dedup_key );
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -228,7 +228,7 @@ class ServerTrack_Source_WooCommerce {
             ->set_custom_data( $custom_data );
 
         // Dispatch only to pending platforms (Meta + TikTok, minus already-sent)
-        ServerTrack_Dispatcher::dispatch_to_platforms( $event, array_values( $pending_platforms ), $dedup_key );
+        ServerTrack_Core::dispatch_to_platforms( $event, array_values( $pending_platforms ), $dedup_key );
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -283,7 +283,7 @@ class ServerTrack_Source_WooCommerce {
             ->set_user_data( $user_data )
             ->set_custom_data( $custom_data );
 
-        ServerTrack_Dispatcher::dispatch_to_all( $event, $dedup_key );
+        ServerTrack_Core::dispatch_to_all( $event, $dedup_key );
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -315,7 +315,7 @@ class ServerTrack_Source_WooCommerce {
             ->set_user_data( $user_data )
             ->set_custom_data( $custom_data );
 
-        ServerTrack_Dispatcher::dispatch_to_all( $event, $event_id );
+        ServerTrack_Core::dispatch_to_all( $event, $event_id );
 
         // Mark the order so we know it was manually verified and sent
         $order->update_meta_data( '_servertrack_manual_purchase_sent', 'yes' );
@@ -338,7 +338,7 @@ class ServerTrack_Source_WooCommerce {
         $event       = ( new ServerTrack_Event( 'Purchase', $event_id ) )
             ->set_user_data( $user_data )
             ->set_custom_data( $custom_data );
-        ServerTrack_Dispatcher::dispatch_to_all( $event, $order_id );
+        ServerTrack_Core::dispatch_to_all( $event, $order_id );
     }
 
     public static function handle_view_content( int $order_id ): void {
@@ -354,7 +354,7 @@ class ServerTrack_Source_WooCommerce {
         $event       = ( new ServerTrack_Event( 'ViewContent', $event_id ) )
             ->set_user_data( $user_data )
             ->set_custom_data( $custom_data );
-        ServerTrack_Dispatcher::dispatch_to_all( $event );
+        ServerTrack_Core::dispatch_to_all( $event );
     }
 
     /**
@@ -379,7 +379,7 @@ class ServerTrack_Source_WooCommerce {
         $event    = ( new ServerTrack_Event( 'AddToCart', $event_id ) )
             ->set_user_data( $user_data )
             ->set_custom_data( $custom_data );
-        ServerTrack_Dispatcher::dispatch_to_all( $event );
+        ServerTrack_Core::dispatch_to_all( $event );
     }
 
     /**
@@ -409,7 +409,7 @@ class ServerTrack_Source_WooCommerce {
         $event       = ( new ServerTrack_Event( 'InitiateCheckout', $event_id ) )
             ->set_user_data( $user_data )
             ->set_custom_data( $custom_data );
-        ServerTrack_Dispatcher::dispatch_to_all( $event );
+        ServerTrack_Core::dispatch_to_all( $event );
     }
 
     public static function handle_add_payment_info( int $order_id ): void {
@@ -425,7 +425,7 @@ class ServerTrack_Source_WooCommerce {
         $event       = ( new ServerTrack_Event( 'AddPaymentInfo', $event_id ) )
             ->set_user_data( $user_data )
             ->set_custom_data( $custom_data );
-        ServerTrack_Dispatcher::dispatch_to_all( $event );
+        ServerTrack_Core::dispatch_to_all( $event );
     }
 
     public static function handle_complete_registration( int $customer_id ): void {
@@ -434,7 +434,7 @@ class ServerTrack_Source_WooCommerce {
         $event     = ( new ServerTrack_Event( 'CompleteRegistration', $event_id ) )
             ->set_user_data( $user_data )
             ->set_custom_data( [ 'currency' => get_woocommerce_currency() ] );
-        ServerTrack_Dispatcher::dispatch_to_all( $event );
+        ServerTrack_Core::dispatch_to_all( $event );
     }
 
     /**
@@ -469,6 +469,6 @@ class ServerTrack_Source_WooCommerce {
         $event    = ( new ServerTrack_Event( 'Purchase', $event_id ) )
             ->set_user_data( $user_data )
             ->set_custom_data( $custom_data );
-        ServerTrack_Dispatcher::dispatch_to_all( $event, $dedup_key );
+        ServerTrack_Core::dispatch_to_all( $event, $dedup_key );
     }
 }
