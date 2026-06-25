@@ -19,7 +19,7 @@ class WooCommerceOrderStatusTest extends TestCase {
     private WC_Order $order;
 
     protected function setUp(): void {
-        ServerTrack_Core::reset();
+        ServerTrack_Dispatcher::reset();
         ServerTrack_Dedup::reset();
         ServerTrack_Logger::reset();
 
@@ -32,28 +32,28 @@ class WooCommerceOrderStatusTest extends TestCase {
     public function test_on_hold_fires_lead(): void {
         ServerTrack_Source_WooCommerce::handle_order_status_change( 101, 'pending', 'on-hold', $this->order );
 
-        $this->assertCount( 1, ServerTrack_Core::$dispatched );
-        $this->assertSame( 'Lead', ServerTrack_Core::$dispatched[0]['event'] );
+        $this->assertCount( 1, ServerTrack_Dispatcher::$dispatched );
+        $this->assertSame( 'Lead', ServerTrack_Dispatcher::$dispatched[0]['event'] );
     }
 
     public function test_failed_fires_contact(): void {
         ServerTrack_Source_WooCommerce::handle_order_status_change( 101, 'pending', 'failed', $this->order );
 
-        $this->assertCount( 1, ServerTrack_Core::$dispatched );
-        $this->assertSame( 'Contact', ServerTrack_Core::$dispatched[0]['event'] );
+        $this->assertCount( 1, ServerTrack_Dispatcher::$dispatched );
+        $this->assertSame( 'Contact', ServerTrack_Dispatcher::$dispatched[0]['event'] );
     }
 
     public function test_cancelled_fires_submit_form(): void {
         ServerTrack_Source_WooCommerce::handle_order_status_change( 101, 'processing', 'cancelled', $this->order );
 
-        $this->assertCount( 1, ServerTrack_Core::$dispatched );
-        $this->assertSame( 'SubmitForm', ServerTrack_Core::$dispatched[0]['event'] );
+        $this->assertCount( 1, ServerTrack_Dispatcher::$dispatched );
+        $this->assertSame( 'SubmitForm', ServerTrack_Dispatcher::$dispatched[0]['event'] );
     }
 
     public function test_unknown_status_fires_nothing(): void {
         ServerTrack_Source_WooCommerce::handle_order_status_change( 101, 'pending', 'refunded', $this->order );
 
-        $this->assertEmpty( ServerTrack_Core::$dispatched, 'Unknown status must not dispatch any event.' );
+        $this->assertEmpty( ServerTrack_Dispatcher::$dispatched, 'Unknown status must not dispatch any event.' );
     }
 
     // ── Dedup (BUG-09) ───────────────────────────────────────────────────
@@ -66,7 +66,7 @@ class WooCommerceOrderStatusTest extends TestCase {
 
         ServerTrack_Source_WooCommerce::handle_order_status_change( 101, 'pending', 'on-hold', $this->order );
 
-        $this->assertEmpty( ServerTrack_Core::$dispatched,
+        $this->assertEmpty( ServerTrack_Dispatcher::$dispatched,
             'BUG-09: event must be skipped when all 3 platforms have already been sent.'
         );
     }
@@ -78,7 +78,7 @@ class WooCommerceOrderStatusTest extends TestCase {
 
         ServerTrack_Source_WooCommerce::handle_order_status_change( 101, 'pending', 'failed', $this->order );
 
-        $this->assertCount( 1, ServerTrack_Core::$dispatched,
+        $this->assertCount( 1, ServerTrack_Dispatcher::$dispatched,
             'BUG-09: event must still fire when only 1 of 3 platforms was already sent.'
         );
     }
@@ -86,14 +86,14 @@ class WooCommerceOrderStatusTest extends TestCase {
     public function test_dedup_key_format_is_correct(): void {
         ServerTrack_Source_WooCommerce::handle_order_status_change( 202, 'pending', 'cancelled', $this->order );
 
-        $dispatched = ServerTrack_Core::$dispatched[0];
+        $dispatched = ServerTrack_Dispatcher::$dispatched[0];
         $this->assertSame( 'order_status_202_cancelled', $dispatched['dedup_key'] );
     }
 
     public function test_custom_data_includes_order_status(): void {
         ServerTrack_Source_WooCommerce::handle_order_status_change( 101, 'pending', 'on-hold', $this->order );
 
-        $custom = ServerTrack_Core::$dispatched[0]['custom'];
+        $custom = ServerTrack_Dispatcher::$dispatched[0]['custom'];
         $this->assertSame( 'on-hold', $custom['order_status'] );
         $this->assertSame( 101, $custom['order_id'] );
     }

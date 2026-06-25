@@ -18,7 +18,7 @@ use PHPUnit\Framework\TestCase;
 class WooCommerceWishlistTest extends TestCase {
 
     protected function setUp(): void {
-        ServerTrack_Core::reset();
+        ServerTrack_Dispatcher::reset();
         ServerTrack_Dedup::reset();
 
         $product        = new WC_Product();
@@ -36,21 +36,21 @@ class WooCommerceWishlistTest extends TestCase {
     public function test_yith_hook_dispatches_add_to_wishlist(): void {
         ServerTrack_Source_WooCommerce::handle_add_to_wishlist( 55, 1 );
 
-        $this->assertCount( 1, ServerTrack_Core::$dispatched );
-        $this->assertSame( 'AddToWishlist', ServerTrack_Core::$dispatched[0]['event'] );
+        $this->assertCount( 1, ServerTrack_Dispatcher::$dispatched );
+        $this->assertSame( 'AddToWishlist', ServerTrack_Dispatcher::$dispatched[0]['event'] );
     }
 
     public function test_ti_hook_dispatches_add_to_wishlist(): void {
         ServerTrack_Source_WooCommerce::handle_add_to_wishlist_ti( 55, 0 );
 
-        $this->assertCount( 1, ServerTrack_Core::$dispatched );
-        $this->assertSame( 'AddToWishlist', ServerTrack_Core::$dispatched[0]['event'] );
+        $this->assertCount( 1, ServerTrack_Dispatcher::$dispatched );
+        $this->assertSame( 'AddToWishlist', ServerTrack_Dispatcher::$dispatched[0]['event'] );
     }
 
     public function test_dispatches_to_meta_and_tiktok_only(): void {
         ServerTrack_Source_WooCommerce::handle_add_to_wishlist( 55, 1 );
 
-        $platforms = ServerTrack_Core::$dispatched[0]['platforms'];
+        $platforms = ServerTrack_Dispatcher::$dispatched[0]['platforms'];
         $this->assertContains( 'meta',   $platforms );
         $this->assertContains( 'tiktok', $platforms );
         $this->assertNotContains( 'google', $platforms,
@@ -66,7 +66,7 @@ class WooCommerceWishlistTest extends TestCase {
 
         ServerTrack_Source_WooCommerce::handle_add_to_wishlist( 55, 1 );
 
-        $this->assertEmpty( ServerTrack_Core::$dispatched,
+        $this->assertEmpty( ServerTrack_Dispatcher::$dispatched,
             'BUG-10: event must not fire when both Meta and TikTok already received it.' );
     }
 
@@ -77,10 +77,10 @@ class WooCommerceWishlistTest extends TestCase {
 
         ServerTrack_Source_WooCommerce::handle_add_to_wishlist( 55, 1 );
 
-        $this->assertCount( 1, ServerTrack_Core::$dispatched,
+        $this->assertCount( 1, ServerTrack_Dispatcher::$dispatched,
             'BUG-10: event must still fire to pending platform (TikTok) when only Meta was sent.' );
 
-        $platforms = ServerTrack_Core::$dispatched[0]['platforms'];
+        $platforms = ServerTrack_Dispatcher::$dispatched[0]['platforms'];
         $this->assertNotContains( 'meta',   $platforms, 'Meta must be excluded (already sent).' );
         $this->assertContains(    'tiktok', $platforms, 'TikTok must be included (pending).' );
     }
@@ -89,14 +89,14 @@ class WooCommerceWishlistTest extends TestCase {
         // product ID 999 is not in the stub store
         ServerTrack_Source_WooCommerce::handle_add_to_wishlist( 999, 1 );
 
-        $this->assertEmpty( ServerTrack_Core::$dispatched,
+        $this->assertEmpty( ServerTrack_Dispatcher::$dispatched,
             'Unknown product must result in no dispatch.' );
     }
 
     public function test_custom_data_structure(): void {
         ServerTrack_Source_WooCommerce::handle_add_to_wishlist( 55, 1 );
 
-        $custom = ServerTrack_Core::$dispatched[0]['custom'];
+        $custom = ServerTrack_Dispatcher::$dispatched[0]['custom'];
         $this->assertSame( [ '55' ],           $custom['content_ids'] );
         $this->assertSame( 'Blue Sneakers',    $custom['content_name'] );
         $this->assertSame( 79.99,              $custom['value'] );

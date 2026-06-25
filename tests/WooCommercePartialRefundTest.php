@@ -19,7 +19,7 @@ use PHPUnit\Framework\TestCase;
 class WooCommercePartialRefundTest extends TestCase {
 
     protected function setUp(): void {
-        ServerTrack_Core::reset();
+        ServerTrack_Dispatcher::reset();
         ServerTrack_Dedup::reset();
 
         // Order: total $100
@@ -53,42 +53,42 @@ class WooCommercePartialRefundTest extends TestCase {
     public function test_partial_refund_dispatches_purchase_event(): void {
         ServerTrack_Source_WooCommerce::handle_partial_refund( 200, 301 );
 
-        $this->assertCount( 1, ServerTrack_Core::$dispatched );
-        $this->assertSame( 'Purchase', ServerTrack_Core::$dispatched[0]['event'] );
+        $this->assertCount( 1, ServerTrack_Dispatcher::$dispatched );
+        $this->assertSame( 'Purchase', ServerTrack_Dispatcher::$dispatched[0]['event'] );
     }
 
     public function test_partial_refund_value_is_negative(): void {
         ServerTrack_Source_WooCommerce::handle_partial_refund( 200, 301 );
 
-        $value = ServerTrack_Core::$dispatched[0]['custom']['value'];
+        $value = ServerTrack_Dispatcher::$dispatched[0]['custom']['value'];
         $this->assertLessThan( 0, $value, 'Partial refund value must be negative.' );
     }
 
     public function test_partial_refund_value_equals_exact_refund_amount(): void {
         ServerTrack_Source_WooCommerce::handle_partial_refund( 200, 301 );
 
-        $value = ServerTrack_Core::$dispatched[0]['custom']['value'];
+        $value = ServerTrack_Dispatcher::$dispatched[0]['custom']['value'];
         $this->assertSame( -25.00, $value, 'Value must equal the exact refund amount, not the order total.' );
     }
 
     public function test_partial_refund_custom_data_has_refund_type(): void {
         ServerTrack_Source_WooCommerce::handle_partial_refund( 200, 301 );
 
-        $this->assertSame( 'partial', ServerTrack_Core::$dispatched[0]['custom']['refund_type'] );
+        $this->assertSame( 'partial', ServerTrack_Dispatcher::$dispatched[0]['custom']['refund_type'] );
     }
 
     public function test_full_refund_is_skipped_by_partial_handler(): void {
         // Refund ID 302 has amount == order total ($100) — should be skipped
         ServerTrack_Source_WooCommerce::handle_partial_refund( 200, 302 );
 
-        $this->assertEmpty( ServerTrack_Core::$dispatched,
+        $this->assertEmpty( ServerTrack_Dispatcher::$dispatched,
             'Full refund must be skipped by handle_partial_refund().' );
     }
 
     public function test_partial_refund_dedup_key_is_per_refund_id(): void {
         ServerTrack_Source_WooCommerce::handle_partial_refund( 200, 301 );
 
-        $dedup = ServerTrack_Core::$dispatched[0]['dedup_key'];
+        $dedup = ServerTrack_Dispatcher::$dispatched[0]['dedup_key'];
         $this->assertSame( 'partial_refund_301', $dedup );
     }
 
@@ -99,14 +99,14 @@ class WooCommercePartialRefundTest extends TestCase {
 
         ServerTrack_Source_WooCommerce::handle_partial_refund( 200, 301 );
 
-        $this->assertEmpty( ServerTrack_Core::$dispatched,
+        $this->assertEmpty( ServerTrack_Dispatcher::$dispatched,
             'Dedup must prevent partial refund from firing twice for the same refund_id.' );
     }
 
     public function test_partial_refund_missing_order_returns_early(): void {
         ServerTrack_Source_WooCommerce::handle_partial_refund( 999, 301 ); // 999 not in stub store
 
-        $this->assertEmpty( ServerTrack_Core::$dispatched,
+        $this->assertEmpty( ServerTrack_Dispatcher::$dispatched,
             'Missing order must result in no dispatch.' );
     }
 
@@ -115,15 +115,15 @@ class WooCommercePartialRefundTest extends TestCase {
     public function test_full_refund_dispatches_negative_purchase(): void {
         ServerTrack_Source_WooCommerce::handle_full_refund( 200, 302 );
 
-        $this->assertCount( 1, ServerTrack_Core::$dispatched );
-        $this->assertSame( 'Purchase', ServerTrack_Core::$dispatched[0]['event'] );
-        $this->assertLessThan( 0, ServerTrack_Core::$dispatched[0]['custom']['value'] );
+        $this->assertCount( 1, ServerTrack_Dispatcher::$dispatched );
+        $this->assertSame( 'Purchase', ServerTrack_Dispatcher::$dispatched[0]['event'] );
+        $this->assertLessThan( 0, ServerTrack_Dispatcher::$dispatched[0]['custom']['value'] );
     }
 
     public function test_bug12_full_refund_fires_when_no_platforms_sent(): void {
         ServerTrack_Source_WooCommerce::handle_full_refund( 200, 302 );
 
-        $this->assertCount( 1, ServerTrack_Core::$dispatched,
+        $this->assertCount( 1, ServerTrack_Dispatcher::$dispatched,
             'BUG-12: full refund must fire when no platforms have been sent yet.' );
     }
 
@@ -135,7 +135,7 @@ class WooCommercePartialRefundTest extends TestCase {
 
         ServerTrack_Source_WooCommerce::handle_full_refund( 200, 302 );
 
-        $this->assertEmpty( ServerTrack_Core::$dispatched,
+        $this->assertEmpty( ServerTrack_Dispatcher::$dispatched,
             'BUG-12: full refund must be skipped when all 3 platforms already sent.' );
     }
 
@@ -146,7 +146,7 @@ class WooCommercePartialRefundTest extends TestCase {
 
         ServerTrack_Source_WooCommerce::handle_full_refund( 200, 302 );
 
-        $this->assertCount( 1, ServerTrack_Core::$dispatched,
+        $this->assertCount( 1, ServerTrack_Dispatcher::$dispatched,
             'BUG-12: full refund must still fire for TikTok+Google when only Meta was sent.' );
     }
 }

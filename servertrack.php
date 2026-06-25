@@ -42,8 +42,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  *      ~15 classes and missed: ServerTrack_Frontend, ServerTrack_CustomEvents,
  *      ServerTrack_Retry (call), and all v3.x WooCommerce source classes.
  *
- *   2. The NEWER ServerTrack_Core::init() system in
- *      includes/class-servertrack-core.php was never require_once'd or called
+ *   2. The NEWER ServerTrack_Dispatcher::init() system in
  *      from this file, making it completely dead code.
  *
  * Result: frontend pixel never fired, custom events never ran, retry queue
@@ -89,9 +88,8 @@ function servertrack_load_classes(): void {
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-webhook.php';
     // BUG-2 FIX: custom-events was present but never loaded.
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-custom-events.php';
-    // Backward-compat shim — keeps ServerTrack_Core as a safe no-op class.
+    // Backward-compat shim — no longer needed, replaced with ServerTrack_Dispatcher logic.
     require_once SERVERTRACK_DIR . 'includes/class-servertrack-dispatcher.php';
-    require_once SERVERTRACK_DIR . 'includes/class-servertrack-core.php';
 
     if ( defined( 'WP_CLI' ) && WP_CLI ) {
         require_once SERVERTRACK_DIR . 'includes/class-servertrack-cli.php';

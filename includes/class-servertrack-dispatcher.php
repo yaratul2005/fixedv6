@@ -126,4 +126,39 @@ class ServerTrack_Dispatcher {
             }
         }
     }
+    /**
+     * Dispatch an event to ALL three platforms (Meta, TikTok, Google),
+     * skipping any that have already received this event (per dedup key).
+     *
+     * This is the method called by ServerTrack_Source_WooCommerce for every
+     * WooCommerce CAPI event. It was missing from this shim, causing a PHP
+     * Fatal Error on every hook firing.
+     *
+     * @param ServerTrack_Event  $event     Fully populated event DTO.
+     * @param string|int|null    $dedup_key Dedup key; defaults to event_id.
+     */
+    public static function dispatch_to_all( ServerTrack_Event $event, $dedup_key = null ): void {
+        self::dispatch_to_platforms( $event, [ 'meta', 'tiktok', 'google', 'snapchat', 'pinterest', 'linkedin' ], $dedup_key );
+    }
+
+    /**
+     * Dispatch an event to a specific subset of platforms.
+     *
+     * Checks ServerTrack_Dedup::already_sent() per platform before sending,
+     * then marks each successfully dispatched platform via
+     * ServerTrack_Dedup::mark_sent().
+     *
+     * @param ServerTrack_Event  $event      Fully populated event DTO.
+     * @param string[]           $platforms  Any subset of ['meta','tiktok','google'].
+     * @param string|int|null    $dedup_key  Dedup key; defaults to event_id.
+     */
+    public static function dispatch_to_platforms(
+        ServerTrack_Event $event,
+        array $platforms,
+        $dedup_key = null
+    ): void {
+        $key = (string) ( $dedup_key ?? $event->event_id );
+
+        self::dispatch( $event, $platforms, $key );
+    }
 }

@@ -253,7 +253,7 @@ class ServerTrack_Dedup {
 
     /**
      * Polymorphic mark_sent() — routes based on key type (int order_id vs string dedup_key).
-     * BUG-FIX (v2.5): Added to support ServerTrack_Core::dispatch_to_platforms() marking logic.
+     * BUG-FIX (v2.5): Added to support ServerTrack_Dispatcher::dispatch_to_platforms() marking logic.
      *
      * @param int|string $key       Order ID (int) or string dedup key
      * @param string     $platform  'meta' | 'google' | 'tiktok'

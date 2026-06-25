@@ -15,7 +15,7 @@ use PHPUnit\Framework\TestCase;
 class WooCommerceAddToCartTest extends TestCase {
 
     protected function setUp(): void {
-        ServerTrack_Core::reset();
+        ServerTrack_Dispatcher::reset();
         ServerTrack_Dedup::reset();
 
         $product        = new WC_Product();
@@ -36,8 +36,8 @@ class WooCommerceAddToCartTest extends TestCase {
             'cart_key_abc', 77, 2, 0, [], []
         );
 
-        $this->assertCount( 1, ServerTrack_Core::$dispatched );
-        $this->assertSame( 'AddToCart', ServerTrack_Core::$dispatched[0]['event'] );
+        $this->assertCount( 1, ServerTrack_Dispatcher::$dispatched );
+        $this->assertSame( 'AddToCart', ServerTrack_Dispatcher::$dispatched[0]['event'] );
     }
 
     public function test_add_to_cart_value_is_price_times_quantity(): void {
@@ -45,7 +45,7 @@ class WooCommerceAddToCartTest extends TestCase {
             'cart_key_abc', 77, 3, 0, [], []
         );
 
-        $custom = ServerTrack_Core::$dispatched[0]['custom'];
+        $custom = ServerTrack_Dispatcher::$dispatched[0]['custom'];
         $this->assertSame( 60.00, $custom['value'],   'Value must be price ($20) × quantity (3) = $60.' );
         $this->assertSame( 3,     $custom['num_items'] );
     }
@@ -55,7 +55,7 @@ class WooCommerceAddToCartTest extends TestCase {
             'cart_key_abc', 77, 1, 0, [], []
         );
 
-        $this->assertSame( [ '77' ], ServerTrack_Core::$dispatched[0]['custom']['content_ids'] );
+        $this->assertSame( [ '77' ], ServerTrack_Dispatcher::$dispatched[0]['custom']['content_ids'] );
     }
 
     public function test_bug11_accepts_six_arguments_without_error(): void {
@@ -75,7 +75,7 @@ class WooCommerceAddToCartTest extends TestCase {
             'ck_missing', 9999, 1, 0, [], []
         );
 
-        $this->assertEmpty( ServerTrack_Core::$dispatched,
+        $this->assertEmpty( ServerTrack_Dispatcher::$dispatched,
             'Unknown product must result in no dispatch.' );
     }
 }
